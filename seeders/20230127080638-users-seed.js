@@ -1,7 +1,10 @@
 'use strict'
 
 const bcrypt = require('bcryptjs')
-const { TEACHERS_AMOUNT, STUDENTS_AMOUNT } = require('./seeders-amount')
+const {
+  TEACHERS_AMOUNT,
+  STUDENTS_AMOUNT
+} = require('../helpers/seeders-amount')
 /** @type {import('sequelize-cli').Migration} */
 
 module.exports = {
