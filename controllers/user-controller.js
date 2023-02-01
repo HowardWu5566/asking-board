@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const { User } = require('../models')
 
@@ -35,6 +36,31 @@ const userController = {
       const userData = newUser.toJSON()
       delete userData.password
       res.json({ status: 'success', user: userData })
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  // 登入
+  login: async (req, res, next) => {
+    try {
+      // 檢查信箱及密碼
+      const { email, password } = req.body
+      const userData = await User.findOne({
+        where: { email },
+        attributes: ['id', 'name', 'email', 'password', 'role', 'avatar']
+      })
+      const isPassordCorrect = await bcrypt.compare(password, userData.password)
+      if (!userData || !isPassordCorrect)
+        return res
+          .status(401)
+          .json({ status: 'error', message: 'email or password incorrect' })
+
+      // 製作 token
+      const user = userData.toJSON()
+      delete user.password
+      const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '30d' })
+      res.status(200).json({ token, user })
     } catch (error) {
       next(error)
     }
