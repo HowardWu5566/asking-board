@@ -201,6 +201,32 @@ const questionController = {
     } catch (error) {
       next(error)
     }
+  },
+  deleteQuestionLike: async (req, res, next) => {
+    try {
+      const userId = 12
+      const questionId = req.params.id
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res
+          .status(404)
+          .json({ status: 'error', message: "question doesn't exist!" })
+      const like = await Like.findOne({
+        where: {
+          userId,
+          object: 'question',
+          objectId: questionId
+        }
+      })
+      if (!like)
+        return res
+          .status(422)
+          .json({ status: 'error', message: "haven't liked the question!" })
+      await like.destroy()
+      return res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
   }
 }
 
