@@ -1,4 +1,4 @@
-const { User, Question, sequelize } = require('../models')
+const { User, Question, Reply, sequelize } = require('../models')
 
 const questionController = {
   getQuestions: async (req, res, next) => {
@@ -107,6 +107,49 @@ const questionController = {
         subject
       })
       return res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
+  },
+  getReplies: async (req, res, next) => {
+    try {
+      const currentUserId = 12
+      const questionId = req.params.id
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res
+          .status(404)
+          .json({ status: 'error', message: "question doesn't exist!" })
+      const replies = await Reply.findAll({
+        raw: true,
+        nest: true,
+        attributes: [
+          'id',
+          'comment',
+          'createdAt',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "reply" AND Likes.objectId = Reply.id)'
+            ),
+            'likeCount'
+          ],
+          [
+            sequelize.literal(
+              `EXISTS (SELECT id FROM Likes WHERE Likes.userId = ${sequelize.escape(
+                currentUserId
+              )} AND Likes.object = "reply" AND Likes.objectId = Reply.id)`
+            ),
+            'isLiked'
+          ]
+        ],
+        include: {
+          model: User,
+          attributes: ['id', 'name', 'avatar']
+        },
+        order: [['createdAt', 'DESC']],
+        where: { questionId }
+      })
+      return res.json({ replies })
     } catch (error) {
       next(error)
     }
