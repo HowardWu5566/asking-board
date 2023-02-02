@@ -94,6 +94,22 @@ const questionController = {
     } catch (error) {
       next(error)
     }
+  },
+  postQuestion: async (req, res, next) => {
+    try {
+      const { description, isAnonymous, grade, subject } = req.body
+      const userId = 12
+      await Question.create({
+        userId,
+        description: description.trim(),
+        isAnonymous,
+        grade,
+        subject
+      })
+      return res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
   }
 }
 
