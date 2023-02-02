@@ -153,6 +153,26 @@ const questionController = {
     } catch (error) {
       next(error)
     }
+  },
+  postReply: async (req, res, next) => {
+    try {
+      const userId = 12
+      const { comment } = req.body
+      const questionId = req.params.id
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res
+          .status(404)
+          .json({ status: 'error', message: "question doesn't exist!" })
+      await Reply.create({
+        userId,
+        questionId,
+        comment
+      })
+      return res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
   }
 }
 
