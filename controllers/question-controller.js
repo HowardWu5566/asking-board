@@ -1,4 +1,4 @@
-const { User, Question, Reply, sequelize } = require('../models')
+const { User, Question, Reply, Like, sequelize } = require('../models')
 
 const questionController = {
   getQuestions: async (req, res, next) => {
@@ -169,6 +169,34 @@ const questionController = {
         questionId,
         comment
       })
+      return res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
+  },
+  postQuestionLike: async (req, res, next) => {
+    try {
+      const userId = 12
+      const questionId = req.params.id
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res
+          .status(404)
+          .json({ status: 'error', message: "question doesn't exist!" })
+      const like = await Like.findOrCreate({
+        where: {
+          userId,
+          object: 'question',
+          objectId: questionId
+        },
+        defaults: {
+          isSeed: false
+        }
+      })
+      if (!like[1])
+        return res
+          .status(422)
+          .json({ status: 'error', message: 'already like the question!' })
       return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
