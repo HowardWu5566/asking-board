@@ -29,6 +29,33 @@ const followshipController = {
     } catch (error) {
       next(error)
     }
+  },
+  unfollowOthers: async (req, res, next) => {
+    try {
+      const userId = 12
+      const followingId = req.params.id
+      const [user, followship] = await Promise.all([
+        User.findByPk(followingId),
+        Followship.findOne({
+          where: {
+            followingId,
+            followerId: userId
+          }
+        })
+      ])
+      if (!user || user.role === 'admin')
+        return res
+          .status(404)
+          .json({ status: 'error', message: "user doesn't exist!" })
+      if (!followship)
+        return res
+          .status(422)
+          .json({ status: 'error', message: "You haven't followed the user!" })
+      await followship.destroy()
+      res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
   }
 }
 
