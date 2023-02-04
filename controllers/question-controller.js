@@ -3,7 +3,7 @@ const { User, Question, Reply, Like, sequelize } = require('../models')
 const questionController = {
   getQuestions: async (req, res, next) => {
     try {
-      const currentUserId = 12
+      const currentUserId = req.user.id
       const questions = await Question.findAll({
         raw: true,
         nest: true,
@@ -48,7 +48,7 @@ const questionController = {
   },
   getQuestion: async (req, res, next) => {
     try {
-      const currentUserId = 12
+      const currentUserId = req.user.id
       const question = await Question.findByPk(req.params.id, {
         raw: true,
         nest: true,
@@ -98,7 +98,7 @@ const questionController = {
   postQuestion: async (req, res, next) => {
     try {
       const { description, isAnonymous, grade, subject } = req.body
-      const userId = 12
+      const userId = req.user.id
       await Question.create({
         userId,
         description: description.trim(),
@@ -113,7 +113,7 @@ const questionController = {
   },
   getReplies: async (req, res, next) => {
     try {
-      const currentUserId = 12
+      const currentUserId = req.user.id
       const questionId = req.params.id
       const question = await Question.findByPk(questionId)
       if (!question)
@@ -156,7 +156,7 @@ const questionController = {
   },
   postReply: async (req, res, next) => {
     try {
-      const userId = 12
+      const userId = req.user.id
       const { comment } = req.body
       const questionId = req.params.id
       const question = await Question.findByPk(questionId)
@@ -176,7 +176,7 @@ const questionController = {
   },
   postQuestionLike: async (req, res, next) => {
     try {
-      const userId = 12
+      const userId = req.user.id
       const questionId = req.params.id
       const question = await Question.findByPk(questionId)
       if (!question)
@@ -204,7 +204,7 @@ const questionController = {
   },
   deleteQuestionLike: async (req, res, next) => {
     try {
-      const userId = 12
+      const userId = req.user.id
       const questionId = req.params.id
       const question = await Question.findByPk(questionId)
       if (!question)
