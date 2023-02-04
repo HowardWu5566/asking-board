@@ -11,5 +11,12 @@ module.exports = {
       req.user = user.dataValues
       next()
     })(req, res, next)
+  },
+  authenticatedUser: (req, res, next) => {
+    if (req.user.role === 'student' || req.user.role === 'teacher')
+      return next()
+    return res
+      .status(403)
+      .json({ status: 'error', message: 'Permission denied' })
   }
 }
