@@ -1,8 +1,6 @@
-const express = require('express')
-const router = express.Router()
+const router = require('express').Router()
+const { undefinedRoute } = require('../middleware/error-handler')
 
-router.get('/', (req, res) => {
-  res.send('routes')
-})
+router.use('*', undefinedRoute)
 
 module.exports = router
