@@ -33,9 +33,8 @@ const userController = {
       })
 
       // 刪除敏感資訊、傳回客戶端
-      const userData = newUser.toJSON()
-      delete userData.password
-      res.json({ status: 'success', user: userData })
+      delete newUser.dataValues.password
+      return res.json({ status: 'success', user: newUser.dataValues })
     } catch (error) {
       next(error)
     }

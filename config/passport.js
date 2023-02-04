@@ -9,13 +9,14 @@ const options = {
 }
 
 passport.use(
-  new JwtStrategy(options, (jwtPayload, done) => {
-    User.findByPk(jwtPayload.id)
-      .then(user => {
-        if (!user) return done(null, false)
-        return done(null, user)
-      })
-      .catch(error => done(error, false))
+  new JwtStrategy(options, async (jwtPayload, done) => {
+    try {
+      const user = await User.findByPk(jwtPayload.id)
+      if (!user) return done(null, false)
+      return done(null, user)
+    } catch (error) {
+      return done(error, false)
+    }
   })
 )
 
