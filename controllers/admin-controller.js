@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { User, Question, sequelize } = require('../models')
+const { User, Question, Reply, sequelize } = require('../models')
 
 const adminController = {
   login: async (req, res, next) => {
@@ -71,6 +71,21 @@ const adminController = {
           message: "question doesn't exist!"
         })
       await question.destroy()
+      res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
+  },
+  deleteReply: async (req, res, next) => {
+    try {
+      const replyId = req.params.id
+      const reply = await Reply.findByPk(replyId)
+      if (!reply)
+        return res.status(404).json({
+          status: 'error',
+          message: "reply doesn't exist!"
+        })
+      await reply.destroy()
       res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
