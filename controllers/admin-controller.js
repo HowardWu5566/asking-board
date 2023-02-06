@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { User } = require('../models')
+const { User, Question, sequelize } = require('../models')
 
 const adminController = {
   login: async (req, res, next) => {
@@ -24,6 +24,39 @@ const adminController = {
         expiresIn: '30d'
       })
       res.status(200).json({ token, admin })
+    } catch (error) {
+      next(error)
+    }
+  },
+  getquestions: async (req, res, next) => {
+    try {
+      const questions = Question.findAll({
+        raw: true,
+        next: true,
+        attributes: [
+          'id',
+          'description',
+          'isAnonymous',
+          'grade',
+          'subject',
+          'createdAt',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Replies WHERE Replies.questionId = Question.id)'
+            ),
+            'replyCount'
+          ],
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
+            ),
+            'likeCount'
+          ]
+        ],
+        include: { model: User },
+        attributes: ['id', 'name', 'avatar']
+      })
+      res.status(200).json(questions)
     } catch (error) {
       next(error)
     }
