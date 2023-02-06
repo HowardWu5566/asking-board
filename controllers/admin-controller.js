@@ -60,6 +60,21 @@ const adminController = {
     } catch (error) {
       next(error)
     }
+  },
+  deleteQuestion: async (req, res, next) => {
+    try {
+      const questionId = req.params.id
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res.status(404).json({
+          status: 'error',
+          message: "question doesn't exist!"
+        })
+      await question.destroy()
+      res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
   }
 }
 
