@@ -90,6 +90,51 @@ const adminController = {
     } catch (error) {
       next(error)
     }
+  },
+  getUsers: async (req, res, next) => {
+    try {
+      const users = await User.findAll({
+        attributes: [
+          'id',
+          'name',
+          'role',
+          'avatar',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Questions WHERE userId = User.id)'
+            ),
+            'tweetCount'
+          ],
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Questions.userId = User.id)'
+            ),
+            'replyCount'
+          ],
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.questionId WHERE Questions.userId = User.id)'
+            ),
+            'likeCount'
+          ],
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Followships WHERE followingId = User.id)'
+            ),
+            'followerCount'
+          ],
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Followships WHERE followerId = User.id)'
+            ),
+            'followingCount'
+          ]
+        ]
+      })
+      res.status(200).json(users)
+    } catch (error) {
+      next(error)
+    }
   }
 }
 
