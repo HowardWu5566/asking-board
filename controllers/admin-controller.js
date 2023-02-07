@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { User, Question, Reply, sequelize } = require('../models')
+const { User, Question, Reply, Image, sequelize } = require('../models')
 
 const adminController = {
   login: async (req, res, next) => {
@@ -30,9 +30,9 @@ const adminController = {
   },
   getquestions: async (req, res, next) => {
     try {
-      const questions = Question.findAll({
+      const questions = await Question.findAll({
         raw: true,
-        next: true,
+        nest: true,
         attributes: [
           'id',
           'description',
@@ -53,10 +53,14 @@ const adminController = {
             'likeCount'
           ]
         ],
-        include: { model: User },
-        attributes: ['id', 'name', 'avatar']
+        include: [
+          { model: User, attributes: ['id', 'name', 'avatar'] },
+          { model: Image, attributes: ['id', 'url'] }
+        ],
+        group: 'id', // 只取一張圖當預覽
+        order: ['id']
       })
-      res.status(200).json(questions)
+      return res.status(200).json(questions)
     } catch (error) {
       next(error)
     }
@@ -103,7 +107,7 @@ const adminController = {
             sequelize.literal(
               '(SELECT COUNT(*) FROM Questions WHERE userId = User.id)'
             ),
-            'tweetCount'
+            'questionCount'
           ],
           [
             sequelize.literal(
@@ -113,7 +117,8 @@ const adminController = {
           ],
           [
             sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.questionId WHERE Questions.userId = User.id)'
+              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id) + ' +
+                '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id)'
             ),
             'likeCount'
           ],
@@ -131,7 +136,7 @@ const adminController = {
           ]
         ]
       })
-      res.status(200).json(users)
+      return res.status(200).json(users)
     } catch (error) {
       next(error)
     }

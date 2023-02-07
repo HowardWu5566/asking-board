@@ -27,7 +27,8 @@ module.exports = {
     await queryInterface.bulkInsert('Images', [
       ...Array.from({ length: IMAGES_IN_QUESTIONS }, (_, index) => ({
         object: 'question',
-        objectId: Math.floor(Math.random() * questionIdArr.length),
+        objectId:
+          questionIdArr[Math.floor(Math.random() * questionIdArr.length)].id,
         url: `https://loremflickr.com/320/240?lock=${index}`,
         isSeed: true,
         createdAt: new Date(),
@@ -35,7 +36,7 @@ module.exports = {
       })),
       ...Array.from({ length: IMAGES_IN_REPLIES }, (_, index) => ({
         object: 'reply',
-        objectId: Math.floor(Math.random() * replyIdArr.length),
+        objectId: replyIdArr[Math.floor(Math.random() * replyIdArr.length)].id,
         url: `https://loremflickr.com/320/240?lock=${
           index + IMAGES_IN_QUESTIONS
         }`,
