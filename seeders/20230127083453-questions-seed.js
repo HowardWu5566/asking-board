@@ -40,10 +40,6 @@ module.exports = {
         (_, index) => ({
           UserId: userIdArr[Math.floor(index / QUESTIONS_PER_STUDENT)].id,
           description: 'seed-question:' + faker.lorem.sentences(2),
-          image:
-            Math.random() > 0.5
-              ? `https://loremflickr.com/320/240?lock=${index}`
-              : null,
           isAnonymous: Math.random() > 0.8,
           grade: grade[Math.floor(Math.random() * grade.length)],
           subject: subject[Math.floor(Math.random() * subject.length)],
