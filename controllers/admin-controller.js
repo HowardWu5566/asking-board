@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { User, Question, Reply, Image, sequelize } = require('../models')
+const { Op } = require('sequelize')
 
 const adminController = {
   login: async (req, res, next) => {
@@ -218,7 +219,8 @@ const adminController = {
             ),
             'followingCount'
           ]
-        ]
+        ],
+        where: { role: { [Op.or]: ['teacher', 'student'] } }
       })
       return res.status(200).json(users)
     } catch (error) {
