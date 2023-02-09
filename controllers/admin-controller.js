@@ -125,6 +125,45 @@ const adminController = {
       next(error)
     }
   },
+  getReplies: async (req, res, next) => {
+    try {
+      const questionId = Number(req.params.id)
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res
+          .status(404)
+          .json({ status: 'error', message: "question doesn't exist!" })
+      const replies = await Reply.findAll({
+        nest: true,
+        attributes: [
+          'id',
+          'comment',
+          'createdAt',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "reply" AND Likes.objectId = Reply.id)'
+            ),
+            'likeCount'
+          ]
+        ],
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'avatar']
+          },
+          {
+            model: Image,
+            attributes: ['id', 'url']
+          }
+        ],
+        order: [['id', 'ASC']],
+        where: { questionId }
+      })
+      return res.status(200).json(replies)
+    } catch (error) {
+      next(error)
+    }
+  },
   deleteReply: async (req, res, next) => {
     try {
       const replyId = req.params.id
