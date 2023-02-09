@@ -35,10 +35,6 @@ module.exports = {
           UserId: userIdArr[Math.floor(Math.random() * userIdArr.length)].id,
           QuestionId: question.id,
           comment: 'seed-reply:' + faker.lorem.sentences(2),
-          image:
-            Math.random() > 0.5
-              ? `https://loremflickr.com/320/240?lock=${index}`
-              : null,
           createdAt: new Date(),
           updatedAt: new Date()
         }))

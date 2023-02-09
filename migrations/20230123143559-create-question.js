@@ -17,9 +17,6 @@ module.exports = {
         allowNull: false,
         type: Sequelize.STRING
       },
-      image: {
-        type: Sequelize.STRING
-      },
       isAnonymous: {
         allowNull: false,
         type: Sequelize.BOOLEAN

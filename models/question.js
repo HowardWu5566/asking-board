@@ -6,6 +6,11 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Question.belongsTo(models.User, { foreignKey: 'userId' })
       Question.hasMany(models.Reply, { foreignKey: 'questionId' })
+      Question.hasMany(models.Image, {
+        foreignKey: 'objectId',
+        constraints: false,
+        scope: { object: 'question' }
+      })
       Question.hasMany(models.Like, {
         foreignKey: 'objectId',
         constraints: false,
@@ -17,7 +22,6 @@ module.exports = (sequelize, DataTypes) => {
     {
       userId: DataTypes.INTEGER,
       description: DataTypes.STRING,
-      image: DataTypes.STRING,
       isAnonymous: DataTypes.BOOLEAN,
       grade: DataTypes.STRING,
       subject: DataTypes.STRING

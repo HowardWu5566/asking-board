@@ -4,7 +4,7 @@ const reply = require('./modules/reply')
 const followship = require('./modules/followship')
 const admin = require('./modules/admin')
 const userController = require('../controllers/user-controller')
-const adminController = require('../')
+const adminController = require('../controllers/admin-controller')
 const { undefinedRoute } = require('../middleware/error-handler')
 const {
   authenticated,
