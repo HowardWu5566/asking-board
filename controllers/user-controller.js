@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const { User, Question, Reply, Followship, sequelize } = require('../models')
-const { Op } = require('sequelize')
+const { User, Question, Reply, Like, Followship, sequelize } = require('../models')
 
 const userController = {
   // 註冊
@@ -187,6 +186,57 @@ const userController = {
       })
 
       return res.status(200).json(replies)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  // 查看使用者按讚的問題及回覆
+  getUserLikes: async (req, res, next) => {
+    try {
+      const userId = Number(req.params.id)
+
+      // 確認使用者存在
+      const user = await User.findByPk(userId)
+      if (!user || user.role === 'admin')
+        return res
+          .status(404)
+          .json({ status: 404, message: "user doesn't exist!" })
+
+      const likes = await Like.findAll({
+        attributes: ['id', 'object', 'objectId', 'createdAt'],
+        include: [
+          {
+            model: Question,
+            attributes: ['id', 'description', 'isAnonymous', 'grade', 'subject'],
+            include: {
+              model: User,
+              attributes: ['id', 'name', 'role', 'avatar']
+            }
+          },
+          {
+            model: Reply,
+            attributes: ['id', 'questionId', 'comment', 'createdAt'],
+            include: {
+              model: User,
+              attributes: ['id', 'name', 'role', 'avatar']
+            }
+          }
+        ],
+        where: { userId }
+      })
+
+      // 問題匿名處理
+      likes.forEach(like => {
+        if (like.Question && like.Question.dataValues.isAnonymous) {
+          like.Question.dataValues.User = {
+            name: '匿名',
+            avatar: 'https://i.imgur.com/YOTISNv.jpg'
+          }
+        }
+      })
+      
+      return res.status(200).json(likes)
     } catch (error) {
       next(error)
     }
