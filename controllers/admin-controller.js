@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { User, Question, Reply, Image, sequelize } = require('../models')
+const { User, Question, Reply, Like, Image, sequelize } = require('../models')
 const { Op } = require('sequelize')
 
 const adminController = {
@@ -120,8 +120,43 @@ const adminController = {
           status: 'error',
           message: "question doesn't exist!"
         })
-      await question.destroy()
-      res.status(200).json({ status: 'success' })
+
+      // 刪除 question 時，同時刪除關聯的 replies, likes, images
+      await sequelize.transaction(async deleteQuestion => {
+        const replies = await Reply.findAll({
+          raw: true,
+          where: { questionId }
+        })
+        const replyIds = replies.map(reply => reply.id)
+        await Reply.destroy({
+          where: { questionId },
+          transaction: deleteQuestion
+        })
+
+        // 刪除 question 的 likes，及 replies 的 likes
+        await Like.destroy({
+          where: {
+            [Op.or]: [
+              { object: 'question', objectId: questionId },
+              { object: 'reply', objectId: { [Op.in]: replyIds } }
+            ]
+          },
+          transaction: deleteQuestion
+        })
+
+        // 刪除 question 的 images，及 replies 的 images
+        await Image.destroy({
+          where: {
+            [Op.or]: [
+              { object: 'question', objectId: questionId },
+              { object: 'reply', objectId: { [Op.in]: replyIds } }
+            ]
+          },
+          transaction: deleteQuestion
+        })
+        return await question.destroy({ transaction: deleteQuestion })
+      })
+      return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
     }
@@ -167,15 +202,27 @@ const adminController = {
   },
   deleteReply: async (req, res, next) => {
     try {
-      const replyId = req.params.id
+      const replyId = Number(req.params.id)
       const reply = await Reply.findByPk(replyId)
       if (!reply)
         return res.status(404).json({
           status: 'error',
           message: "reply doesn't exist!"
         })
-      await reply.destroy()
-      res.status(200).json({ status: 'success' })
+
+      // 刪除 reply 時，同時刪除關聯的 likes, images
+      await sequelize.transaction(async deleteReply => {
+        await Like.destroy({
+          where: { object: 'reply', objectId: replyId },
+          transaction: deleteReply
+        })
+        await Image.destroy({
+          where: { object: 'reply', objectId: replyId },
+          transaction: deleteReply
+        })
+        return await reply.destroy({ transaction: deleteReply })
+      })
+      return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
     }
