@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const { User, Question, Reply, sequelize } = require('../models')
+const { User, Question, Reply, Followship, sequelize } = require('../models')
 const { Op } = require('sequelize')
 
 const userController = {
@@ -187,6 +187,39 @@ const userController = {
       })
 
       return res.status(200).json(replies)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  // 查看誰追蹤他
+  getUserFollowers: async (req, res, next) => {
+    try {
+      const userId = Number(req.params.id)
+
+      // 確認使用者存在
+      const user = await User.findByPk(userId)
+      if (!user || user.role === 'admin')
+        return res
+          .status(404)
+          .json({ status: 404, message: "user doesn't exist!" })
+
+      let followers = await Followship.findAll({
+        attributes: [],
+        include: {
+          model: User,
+          as: 'followers',
+          attributes: ['id', 'name', 'role', 'avatar']
+        },
+        where: { followingId: userId }
+      })
+
+      // 改變回傳資料結構，方便前端串接
+      const followerData = followers.map(
+        follower => follower.followers.dataValues
+      )
+
+      return res.status(200).json(followerData)
     } catch (error) {
       next(error)
     }
