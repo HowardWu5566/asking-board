@@ -118,6 +118,32 @@ const questionController = {
       next(error)
     }
   },
+  putQuestion: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const { description, isAnonymous, grade, subject } = req.body
+      const questionId = Number(req.params.id)
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res
+          .status(404)
+          .json({ status: 'error', message: "question doesn't exist!" })
+      if (question.userId !== currentUserId)
+        return res
+          .status(401)
+          .json({ status: 'error', message: 'unauthorized!' })
+      const updatedQuestion = {
+        description,
+        isAnonymous,
+        grade,
+        subject
+      }
+      await question.update(updatedQuestion)
+      return res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
+  },
   deleteQuestion: async (req, res, next) => {
     try {
       const currentuserId = req.user.id
