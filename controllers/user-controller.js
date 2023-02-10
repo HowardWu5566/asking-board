@@ -1,20 +1,27 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const { User, Question, Reply, Like, Followship, sequelize } = require('../models')
+const {
+  User,
+  Question,
+  Reply,
+  Like,
+  Followship,
+  sequelize
+} = require('../models')
 
 const userController = {
   // 註冊
   signUp: async (req, res, next) => {
     try {
       const { name, email, password, confirmPassword, role } = req.body
-      const messages = []
+      const messages = {}
       const userEmail = await User.findOne({ where: { email } })
-      if (userEmail) messages.push({ msg: 'email已重複註冊！' })
-      if (!name.trim()) messages.push({ msg: '名稱不可空白！' })
-      if (!email.trim()) messages.push({ msg: '名稱不可空白！' })
+      if (!name.trim()) messages.name = 'please enter name'
+      if (userEmail) messages.email = 'email has been registered'
+      if (!email.trim()) messages.email = 'please enter email'
       if (password !== confirmPassword)
-        messages.push({ msg: '密碼與確認密碼不符！' })
-      if (messages.length) {
+        messages.password = "password doesn't match"
+      if (Object.keys(messages).length !== 0) {
         return res.status(422).json({
           status: 'error',
           messages,
@@ -208,7 +215,13 @@ const userController = {
         include: [
           {
             model: Question,
-            attributes: ['id', 'description', 'isAnonymous', 'grade', 'subject'],
+            attributes: [
+              'id',
+              'description',
+              'isAnonymous',
+              'grade',
+              'subject'
+            ],
             include: {
               model: User,
               attributes: ['id', 'name', 'role', 'avatar']
@@ -235,7 +248,7 @@ const userController = {
           }
         }
       })
-      
+
       return res.status(200).json(likes)
     } catch (error) {
       next(error)
