@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const user = require('./modules/user')
 const question = require('./modules/question')
 const reply = require('./modules/reply')
 const followship = require('./modules/followship')
@@ -16,6 +17,7 @@ router.post('/api/v1/signup', userController.signUp)
 router.post('/api/v1/users/login', userController.login)
 router.post('/api/v1/admin/login', adminController.login)
 
+router.use('/api/v1/users', authenticated, authenticatedUser, user)
 router.use('/api/v1/questions', authenticated, authenticatedUser, question)
 router.use('/api/v1/replies', authenticated, authenticatedUser, reply)
 router.use('/api/v1/followships', authenticated, authenticatedUser, followship)

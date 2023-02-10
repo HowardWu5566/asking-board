@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const { User } = require('../models')
+const { User, sequelize } = require('../models')
+const { Op } = require('sequelize')
 
 const userController = {
   // 註冊
@@ -60,6 +61,70 @@ const userController = {
       delete user.password
       const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '30d' })
       res.status(200).json({ token, user })
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  // 查看使用者
+  getUser: async (req, res, next) => {
+    try {
+      const userId = Number(req.params.id)
+      const user = await User.findByPk(userId, {
+        attributes: [
+          'id',
+          'name',
+          'role',
+          'avatar',
+          'introduction',
+
+          // 發問數
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Questions WHERE userId = User.id)'
+            ),
+            'questionCount'
+          ],
+
+          // 回覆數
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Questions.userId = User.id)'
+            ),
+            'replyCount'
+          ],
+
+          // 收到讚數
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id) + ' +
+                '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id)'
+            ),
+            'likedCount'
+          ],
+
+          // 多少人追蹤他
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Followships WHERE followingId = User.id)'
+            ),
+            'followerCount'
+          ],
+
+          // 他追蹤多少人
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Followships WHERE followerId = User.id)'
+            ),
+            'followingCount'
+          ]
+        ]
+      })
+      if (!user || user.role === 'admin')
+        return res
+          .status(404)
+          .json({ status: 404, message: "user doesn't exist!" })
+      return res.status(200).json(user)
     } catch (error) {
       next(error)
     }
