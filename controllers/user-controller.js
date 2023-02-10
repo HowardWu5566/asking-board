@@ -223,6 +223,39 @@ const userController = {
     } catch (error) {
       next(error)
     }
+  },
+
+  // 查看他追蹤誰
+  getUserFollowings: async (req, res, next) => {
+    try {
+      const userId = Number(req.params.id)
+
+      // 確認使用者存在
+      const user = await User.findByPk(userId)
+      if (!user || user.role === 'admin')
+        return res
+          .status(404)
+          .json({ status: 404, message: "user doesn't exist!" })
+
+      let followings = await Followship.findAll({
+        attributes: [],
+        include: {
+          model: User,
+          as: 'followings',
+          attributes: ['id', 'name', 'role', 'avatar']
+        },
+        where: { followerId: userId }
+      })
+
+      // 改變回傳資料結構，方便前端串接
+      const followingData = followings.map(
+        following => following.followings.dataValues
+      )
+
+      return res.status(200).json(followingData)
+    } catch (error) {
+      next(error)
+    }
   }
 }
 
