@@ -1,4 +1,5 @@
 const { User, Question, Reply, Like, Image, sequelize } = require('../models')
+const { Op } = require('sequelize')
 
 const questionController = {
   getQuestions: async (req, res, next) => {
@@ -111,6 +112,56 @@ const questionController = {
         isAnonymous,
         grade,
         subject
+      })
+      return res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
+  },
+  deleteQuestion: async (req, res, next) => {
+    try {
+      const currentuserId = req.user.id
+      const questionId = req.params.id
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res
+          .status(404)
+          .json({ status: 404, message: "question doesn't exist!" })
+      if (question.userId !== currentuserId)
+        return res
+          .status(401)
+          .json({ status: 'error', message: 'unauthorized!' })
+
+      // 刪除 question 時，同時刪除關聯的 replies, likes, images
+      await sequelize.transaction(async deleteQuestion => {
+        const replies = await Reply.findAll({ where: { questionId } })
+        const replyIds = replies.map(reply => reply.id)
+        console.log(replyIds)
+        await Reply.destroy({
+          where: { questionId },
+          transaction: deleteQuestion
+        })
+        // 刪除 question 的 likes，及 replies 的 likes
+        await Like.destroy({
+          where: {
+            [Op.or]: [
+              { object: 'question', objectId: questionId },
+              { object: 'reply', objectId: { [Op.in]: replyIds } }
+            ]
+          },
+          transaction: deleteQuestion
+        })
+        // 刪除 question 的 images，及 replies 的 images
+        await Image.destroy({
+          where: {
+            [Op.or]: [
+              { object: 'question', objectId: questionId },
+              { object: 'reply', objectId: { [Op.in]: replyIds } }
+            ]
+          },
+          transaction: deleteQuestion
+        })
+        return await question.destroy({ transaction: deleteQuestion })
       })
       return res.status(200).json({ status: 'success' })
     } catch (error) {
