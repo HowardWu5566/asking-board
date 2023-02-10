@@ -29,7 +29,7 @@ const adminController = {
       next(error)
     }
   },
-  getquestions: async (req, res, next) => {
+  getQuestions: async (req, res, next) => {
     try {
       const questions = await Question.findAll({
         raw: true,
@@ -66,7 +66,7 @@ const adminController = {
       next(error)
     }
   },
-  getquestion: async (req, res, next) => {
+  getQuestion: async (req, res, next) => {
     try {
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId, {
