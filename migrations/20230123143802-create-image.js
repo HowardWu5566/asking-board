@@ -1,25 +1,30 @@
 'use strict'
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Replies', {
+    await queryInterface.createTable('Images', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userId: {
-        allowNull: false,
-        type: Sequelize.INTEGER
-      },
-      questionId: {
-        allowNull: false,
-        type: Sequelize.INTEGER
-      },
-      comment: {
+      object: {
         allowNull: false,
         type: Sequelize.STRING
+      },
+      objectId: {
+        allowNull: false,
+        type: Sequelize.INTEGER
+      },
+      url: {
+        allowNull: false,
+        type: Sequelize.STRING
+      },
+      isSeed: {
+        allowNull: false,
+        type: Sequelize.BOOLEAN
       },
       createdAt: {
         allowNull: false,
@@ -31,7 +36,8 @@ module.exports = {
       }
     })
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Replies')
+    await queryInterface.dropTable('Images')
   }
 }

@@ -2,33 +2,32 @@
 
 const { Model } = require('sequelize')
 module.exports = (sequelize, DataTypes) => {
-  class Like extends Model {
+  class Image extends Model {
     static associate(models) {
-      Like.belongsTo(models.User, { foreignKey: 'userId' })
-      Like.belongsTo(models.Question, {
+      Image.belongsTo(models.Question, {
         foreignKey: 'objectId',
         constraints: false,
         scope: { object: 'question' }
       })
-      Like.belongsTo(models.Reply, {
+      Image.belongsTo(models.Reply, {
         foreignKey: 'objectId',
         constraints: false,
         scope: { object: 'reply' }
       })
     }
   }
-  Like.init(
+  Image.init(
     {
-      userId: DataTypes.INTEGER,
       object: DataTypes.STRING,
       objectId: DataTypes.INTEGER,
+      url: DataTypes.STRING,
       isSeed: DataTypes.BOOLEAN
     },
     {
       sequelize,
-      modelName: 'Like',
-      tableName: 'Likes'
+      modelName: 'Image',
+      tableName: 'Images'
     }
   )
-  return Like
+  return Image
 }
