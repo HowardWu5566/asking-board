@@ -43,6 +43,17 @@ const questionController = {
         group: 'id', // 只取一張圖當預覽
         order: [['id', 'DESC']]
       })
+
+      // 匿名處理
+      questions.forEach(question => {
+        if (question.isAnonymous) {
+          question.User = {
+            name: '匿名',
+            avatar: 'https://i.imgur.com/YOTISNv.jpg'
+          }
+        }
+      })
+
       return res.status(200).json(questions)
     } catch (error) {
       next(error)
@@ -97,6 +108,15 @@ const questionController = {
         return res
           .status(404)
           .json({ status: 404, message: "question doesn't exist!" })
+
+      // 匿名處理
+      if (question.isAnonymous) {
+        question.User = {
+          name: '匿名',
+          avatar: 'https://i.imgur.com/YOTISNv.jpg'
+        }
+      }
+
       return res.status(200).json(question)
     } catch (error) {
       next(error)
