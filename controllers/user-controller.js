@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const { User, sequelize } = require('../models')
+const { User, Question, sequelize } = require('../models')
 const { Op } = require('sequelize')
 
 const userController = {
@@ -125,6 +125,36 @@ const userController = {
           .status(404)
           .json({ status: 404, message: "user doesn't exist!" })
       return res.status(200).json(user)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  // 查看使用者發問的問題
+  getUserQuestions: async (req, res, next) => {
+    try {
+      const userId = req.params.id
+
+      // 確認使用者存在
+      const user = await User.findByPk(userId)
+      if (!user || user.role === 'admin')
+        return res
+          .status(404)
+          .json({ status: 404, message: "user doesn't exist!" })
+
+      const questions = await Question.findAll({
+        attributes: [
+          'id',
+          'userId',
+          'description',
+          'grade',
+          'subject',
+          'createdAt'
+        ],
+        where: { userId, isAnonymous: false } // 不顯示匿名發問
+      })
+      console.log(questions)
+      return res.status(200).json(questions)
     } catch (error) {
       next(error)
     }
