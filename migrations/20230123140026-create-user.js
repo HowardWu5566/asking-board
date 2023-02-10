@@ -30,6 +30,16 @@ module.exports = {
         defaultValue: 'https://i.imgur.com/YOTISNv.jpg',
         type: Sequelize.STRING
       },
+      introduction: {
+        allowNull: false,
+        defaultValue: '此人尚未更新簡介',
+        type: Sequelize.STRING
+      },
+      isLocalAccount: {
+        allowNull: false,
+        defaultValue: false,
+        type: Sequelize.BOOLEAN
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
