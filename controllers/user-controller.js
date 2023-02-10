@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const { User, Question, sequelize } = require('../models')
+const { User, Question, Reply, sequelize } = require('../models')
 const { Op } = require('sequelize')
 
 const userController = {
@@ -155,6 +155,38 @@ const userController = {
       })
       console.log(questions)
       return res.status(200).json(questions)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  getUserReplies: async (req, res, next) => {
+    try {
+      const userId = req.params.id
+
+      // 確認使用者存在
+      const user = await User.findByPk(userId)
+      if (!user || user.role === 'admin')
+        return res
+          .status(404)
+          .json({ status: 404, message: "user doesn't exist!" })
+
+      const replies = await Reply.findAll({
+        attributes: ['id', 'questionId', 'comment', 'createdAt'],
+        include: {
+          model: Question,
+          attributes: ['id', 'description', 'grade', 'subject']
+        },
+        where: { userId }
+      })
+
+      // 處理過長的問題
+      replies.forEach(reply => {
+        reply.Question.description =
+          reply.Question.description.slice(0, 20) + '...'
+      })
+
+      return res.status(200).json(replies)
     } catch (error) {
       next(error)
     }
