@@ -19,6 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       followerId: DataTypes.INTEGER,
       followingId: DataTypes.INTEGER,
       isSeed: DataTypes.BOOLEAN
+      followingId: DataTypes.INTEGER
     },
     {
       sequelize,
