@@ -5,11 +5,16 @@ module.exports = (sequelize, DataTypes) => {
   class Like extends Model {
     static associate(models) {
       Like.belongsTo(models.User, { foreignKey: 'userId' })
-      if (this.object === 'question') {
-        Like.belongsTo(Question, { foreignKey: 'object_id' })
-      } else if (this.object === 'reply') {
-        Like.belongsTo(Reply, { foreignKey: 'object_id' })
-      }
+      Like.belongsTo(models.Question, {
+        foreignKey: 'objectId',
+        constraints: false,
+        scope: { object: 'question' }
+      })
+      Like.belongsTo(models.Reply, {
+        foreignKey: 'objectId',
+        constraints: false,
+        scope: { object: 'reply' }
+      })
     }
   }
   Like.init(
