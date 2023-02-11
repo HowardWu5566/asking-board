@@ -8,6 +8,7 @@ const {
   Followship,
   sequelize
 } = require('../models')
+const { Op } = require('sequelize')
 
 const userController = {
   // 註冊
@@ -53,11 +54,15 @@ const userController = {
       // 檢查信箱及密碼
       const { email, password } = req.body
       const userData = await User.findOne({
-        where: { email },
+        where: { email, role: { [Op.ne]: 'admin' } },
         attributes: ['id', 'name', 'email', 'password', 'role', 'avatar']
       })
+      if (!userData)
+        return res
+          .status(401)
+          .json({ status: 'error', message: 'email or password incorrect' })
       const isPassordCorrect = await bcrypt.compare(password, userData.password)
-      if (!userData || !isPassordCorrect)
+      if (!isPassordCorrect)
         return res
           .status(401)
           .json({ status: 'error', message: 'email or password incorrect' })
