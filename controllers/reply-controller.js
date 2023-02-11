@@ -3,7 +3,7 @@ const { Reply, Like } = require('../models')
 const replyController = {
   putReply: async (req, res, next) => {
     try {
-      const userId = 12
+      const userId = req.user.id
       const { comment } = req.body
       const replyId = req.params.id
       const reply = await Reply.findByPk(replyId)
@@ -28,7 +28,7 @@ const replyController = {
   },
   deleteReply: async (req, res, next) => {
     try {
-      const userId = 12
+      const userId = req.user.id
       const replyId = req.params.id
       const reply = await Reply.findByPk(replyId)
       if (!reply)
@@ -47,7 +47,7 @@ const replyController = {
   },
   postReplyLike: async (req, res, next) => {
     try {
-      const userId = 12
+      const userId = req.user.id
       const replyId = req.params.id
       const reply = await Reply.findByPk(replyId)
       if (!reply)
@@ -73,7 +73,7 @@ const replyController = {
   },
   deleteReplyLike: async (req, res, next) => {
     try {
-      const userId = 12
+      const userId = req.user.id
       const replyId = req.params.id
       const reply = await Reply.findByPk(replyId)
       if (!reply)

@@ -27,6 +27,7 @@ module.exports = {
       },
       avatar: {
         allowNull: false,
+        defaultValue: 'https://i.imgur.com/YOTISNv.jpg',
         type: Sequelize.STRING
       },
       createdAt: {

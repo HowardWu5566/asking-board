@@ -4,7 +4,7 @@ const { Op } = require('sequelize')
 const followshipController = {
   followOthers: async (req, res, next) => {
     try {
-      const userId = 12
+      const userId = req.user.id
       const followingId = Number(req.body.id)
       if (userId === followingId)
         return res
@@ -33,7 +33,7 @@ const followshipController = {
   },
   unfollowOthers: async (req, res, next) => {
     try {
-      const userId = 12
+      const userId = req.user.id
       const followingId = req.params.id
       const [user, followship] = await Promise.all([
         User.findByPk(followingId),
@@ -60,7 +60,7 @@ const followshipController = {
   },
   getMostFollowerUser: async (req, res, next) => {
     try {
-      const currentUserId = 12
+      const currentUserId = req.user.id
       const users = await User.findAll({
         raw: true,
         nest: true,
