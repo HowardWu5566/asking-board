@@ -9,6 +9,7 @@ const {
   sequelize
 } = require('../models')
 const { Op } = require('sequelize')
+const ACTIVE_USER_COUNT = 10
 
 const userController = {
   // 註冊
@@ -321,6 +322,49 @@ const userController = {
       )
 
       return res.status(200).json(followingData)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  // 查看回覆數最多的使用者
+  getMostRepliesUsers: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const users = await User.findAll({
+        attributes: [
+          'id',
+          'name',
+          'role',
+          'avatar',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Replies WHERE Replies.userId = User.id)'
+            ),
+            'replyCount'
+          ],
+          [
+            sequelize.literal(
+              `EXISTS(SELECT COUNT(id) FROM Followships WHERE Followships.followerId = ${sequelize.escape(
+                currentUserId
+              )} AND Followships.followingId = User.id)`
+            ),
+            'isFollowed'
+          ]
+        ],
+        order: [['replyCount', 'DESC']],
+        limit: ACTIVE_USER_COUNT,
+        where: { role: { [Op.ne]: 'admin' } }
+      })
+
+      // 如果自己在名單上，刪除自己的 isFollowed 屬性
+      users.forEach(user => {
+        if (user.dataValues.id === currentUserId) {
+          delete user.dataValues.isFollowed
+        }
+      })
+
+      return res.status(200).json(users)
     } catch (error) {
       next(error)
     }
