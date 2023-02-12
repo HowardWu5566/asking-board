@@ -411,6 +411,50 @@ const userController = {
     } catch (error) {
       next(error)
     }
+  },
+
+  // 查看得到最多讚的使用者
+  getMostLikedUsers: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const users = await User.findAll({
+        attributes: [
+          'id',
+          'name',
+          'role',
+          'avatar',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id AND Likes.object = "question") + ' + // 所發 question 得到的 like 數量
+                '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id AND Likes.object = "reply")' // 所發 reply 得到的 like 數量
+            ),
+            'likedCount'
+          ],
+          [
+            sequelize.literal(
+              `EXISTS(SELECT COUNT(id) FROM Followships WHERE Followships.followerId = ${sequelize.escape(
+                currentUserId
+              )} AND Followships.followingId = User.id)`
+            ),
+            'isFollowed'
+          ]
+        ],
+        order: [['likedCount', 'DESC']],
+        limit: ACTIVE_USER_COUNT,
+        where: { role: { [Op.ne]: 'admin' } }
+      })
+
+      // 如果自己在名單上，刪除自己的 isFollowed 屬性
+      users.forEach(user => {
+        if (user.dataValues.id === currentUserId) {
+          delete user.dataValues.isFollowed
+        }
+      })
+
+      return res.status(200).json(users)
+    } catch (error) {
+      next(error)
+    }
   }
 }
 
