@@ -368,6 +368,49 @@ const userController = {
     } catch (error) {
       next(error)
     }
+  },
+
+  // 查看追蹤數最多的使用者
+  getMostFollowersUsers: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const users = await User.findAll({
+        attributes: [
+          'id',
+          'name',
+          'role',
+          'avatar',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Followships WHERE followingId = User.id)'
+            ),
+            'followerCount'
+          ],
+          [
+            sequelize.literal(
+              `EXISTS(SELECT COUNT(id) FROM Followships WHERE Followships.followerId = ${sequelize.escape(
+                currentUserId
+              )} AND Followships.followingId = User.id)`
+            ),
+            'isFollowed'
+          ]
+        ],
+        order: [['followerCount', 'DESC']],
+        limit: ACTIVE_USER_COUNT,
+        where: { role: { [Op.ne]: 'admin' } }
+      })
+
+      // 如果自己在名單上，刪除自己的 isFollowed 屬性
+      users.forEach(user => {
+        if (user.dataValues.id === currentUserId) {
+          delete user.dataValues.isFollowed
+        }
+      })
+
+      return res.status(200).json(users)
+    } catch (error) {
+      next(error)
+    }
   }
 }
 
