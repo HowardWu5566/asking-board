@@ -455,6 +455,50 @@ const userController = {
     } catch (error) {
       next(error)
     }
+  },
+
+  // 修改帳戶設定
+  putUserAccount: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const { role, password, confirmPassword, newPassword } = req.body
+
+      // 修改密碼的驗證
+      // 表單驗證
+      if (newPassword) {
+        const messages = {}
+        if (!password) messages.password = 'enter original password!'
+        if (!confirmPassword)
+          messages.confirmPassword = 'enter original password!'
+        if (password !== confirmPassword)
+          messages.match = "passwords don't match"
+        if (Object.keys(messages).length !== 0) {
+          return res.status(422).json({
+            status: 'error',
+            messages,
+            role
+          })
+        }
+      }
+
+      const user = await User.findByPk(req.user.id)
+      if (newPassword) {
+        // 密碼正確性驗證及更新資料
+        const isPassordCorrect = await bcrypt.compare(password, user.password)
+        if (!isPassordCorrect)
+          return res
+            .status(401)
+            .json({ status: 'error', message: 'password incorrect' })
+        user.update({ role, password: bcrypt.hashSync(newPassword, 10) })
+      } else {
+        // 未修改密碼更新資料
+        if (role !== user.role) user.update({ role })
+      }
+
+      return res.status(200).json({ status: 'success', role })
+    } catch (error) {
+      next(error)
+    }
   }
 }
 
