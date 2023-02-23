@@ -9,6 +9,7 @@ const {
   sequelize
 } = require('../models')
 const { Op } = require('sequelize')
+const { imgurFileHandler } = require('../helpers/file-helper')
 const ACTIVE_USER_COUNT = 10
 
 const userController = {
@@ -452,6 +453,25 @@ const userController = {
       })
 
       return res.status(200).json(users)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  // 修改個人資料
+  putUser: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const { name, introduction } = req.body
+      const { file } = req
+      const updatedData = {
+        name,
+        introduction
+      }
+      if (file) updatedData.avatar = await imgurFileHandler(file)
+      const user = await User.findByPk(currentUserId)
+      user.update(updatedData)
+      return res.status(200).json({ k: 4 })
     } catch (error) {
       next(error)
     }

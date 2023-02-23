@@ -1,6 +1,8 @@
 const router = require('express').Router()
 const userController = require('../../controllers/user-controller')
+const upload = require('../../middleware/multer')
 
+router.put('/', upload.single('avatar'), userController.putUser)
 router.get('/most_replies', userController.getMostRepliesUsers)
 router.get('/most_followers', userController.getMostFollowersUsers)
 router.get('/most_liked', userController.getMostLikedUsers)
