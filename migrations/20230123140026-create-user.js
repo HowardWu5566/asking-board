@@ -23,6 +23,7 @@ module.exports = {
       },
       role: {
         allowNull: false,
+        defaultValue: 'student',
         type: Sequelize.STRING
       },
       avatar: {

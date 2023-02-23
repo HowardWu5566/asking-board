@@ -16,7 +16,7 @@ const userController = {
   // 註冊
   signUp: async (req, res, next) => {
     try {
-      const { name, email, password, confirmPassword, role } = req.body
+      const { name, email, password, confirmPassword } = req.body
       const messages = {}
       const userEmail = await User.findOne({ where: { email } })
       if (!name.trim()) messages.name = 'please enter name'
@@ -29,8 +29,7 @@ const userController = {
           status: 'error',
           messages,
           name,
-          email,
-          role
+          email
         })
       }
 
@@ -38,8 +37,7 @@ const userController = {
       const newUser = await User.create({
         name,
         email,
-        password: bcrypt.hashSync(password, 10),
-        role
+        password: bcrypt.hashSync(password, 10)
       })
 
       // 刪除敏感資訊、傳回客戶端
