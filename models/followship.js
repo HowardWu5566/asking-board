@@ -6,11 +6,11 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Followship.belongsTo(models.User, {
         foreignKey: 'followerId',
-        as: 'followings'
+        as: 'followers'
       })
       Followship.belongsTo(models.User, {
         foreignKey: 'followingId',
-        as: 'followers'
+        as: 'followings'
       })
     }
   }

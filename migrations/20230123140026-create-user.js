@@ -23,12 +23,23 @@ module.exports = {
       },
       role: {
         allowNull: false,
+        defaultValue: 'student',
         type: Sequelize.STRING
       },
       avatar: {
         allowNull: false,
         defaultValue: 'https://i.imgur.com/YOTISNv.jpg',
         type: Sequelize.STRING
+      },
+      introduction: {
+        allowNull: false,
+        defaultValue: '此人尚未更新簡介',
+        type: Sequelize.STRING
+      },
+      isLocalAccount: {
+        allowNull: false,
+        defaultValue: false,
+        type: Sequelize.BOOLEAN
       },
       createdAt: {
         allowNull: false,
