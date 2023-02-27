@@ -1,5 +1,6 @@
 const { User, Question, Reply, Like, Image, sequelize } = require('../models')
 const { Op } = require('sequelize')
+const { imgurFileHandler } = require('../helpers/file-helper')
 
 const questionController = {
   getQuestions: async (req, res, next) => {
@@ -125,14 +126,30 @@ const questionController = {
   postQuestion: async (req, res, next) => {
     try {
       const { description, isAnonymous, grade, subject } = req.body
+      const { files } = req
       const userId = req.user.id
-      await Question.create({
+
+      // 寫入 Questions 資料表
+      const question = await Question.create({
         userId,
         description: description.trim(),
         isAnonymous,
         grade,
         subject
       })
+
+      // 若有圖片，寫入 Images 資料表
+      if (files.length) {
+        for (const file of files) {
+          await Image.create({
+            object: 'question',
+            objectId: question.dataValues.id,
+            url: await imgurFileHandler(file),
+            isSeed: false
+          })
+        }
+      }
+
       return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
@@ -266,17 +283,33 @@ const questionController = {
     try {
       const userId = req.user.id
       const { comment } = req.body
+      const { files } = req
       const questionId = req.params.id
       const question = await Question.findByPk(questionId)
       if (!question)
         return res
           .status(404)
           .json({ status: 'error', message: "question doesn't exist!" })
-      await Reply.create({
+
+      // 寫入 Replies 資料表
+      const reply = await Reply.create({
         userId,
         questionId,
         comment
       })
+
+      // 若有圖片，寫入 Images 資料表
+      if (files.length) {
+        for (const file of files) {
+          await Image.create({
+            object: 'reply',
+            objectId: reply.dataValues.id,
+            url: await imgurFileHandler(file),
+            isSeed: false
+          })
+        }
+      }
+
       return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
