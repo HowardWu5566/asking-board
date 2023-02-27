@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { User, Question, Reply, Image, sequelize } = require('../models')
+const { relativeTime } = require('../helpers/date-helper')
 
 const adminController = {
   login: async (req, res, next) => {
@@ -60,6 +61,12 @@ const adminController = {
         group: 'id', // 只取一張圖當預覽
         order: ['id']
       })
+
+      // 時間格式
+      questions.forEach(
+        question => (question.createdAt = relativeTime(question.createdAt))
+      )
+
       return res.status(200).json(questions)
     } catch (error) {
       next(error)

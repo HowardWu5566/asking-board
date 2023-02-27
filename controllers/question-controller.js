@@ -1,6 +1,7 @@
 const { User, Question, Reply, Like, Image, sequelize } = require('../models')
 const { Op } = require('sequelize')
 const { imgurFileHandler } = require('../helpers/file-helper')
+const { relativeTime } = require('../helpers/date-helper')
 
 const questionController = {
   getQuestions: async (req, res, next) => {
@@ -45,7 +46,7 @@ const questionController = {
         order: [['id', 'DESC']]
       })
 
-      // 匿名處理
+      // 匿名處理、createdAt 格式轉換成相對時間
       questions.forEach(question => {
         if (question.isAnonymous) {
           question.User = {
@@ -53,6 +54,7 @@ const questionController = {
             avatar: 'https://i.imgur.com/YOTISNv.jpg'
           }
         }
+        question.createdAt = relativeTime(question.createdAt)
       })
 
       return res.status(200).json(questions)
@@ -65,6 +67,7 @@ const questionController = {
       const currentUserId = req.user.id
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId, {
+        raw: true,
         nest: true,
         attributes: [
           'id',
@@ -117,6 +120,8 @@ const questionController = {
           avatar: 'https://i.imgur.com/YOTISNv.jpg'
         }
       }
+      // 時間格式
+      question.createdAt = relativeTime(question.createdAt)
 
       return res.status(200).json(question)
     } catch (error) {
@@ -241,6 +246,7 @@ const questionController = {
           .status(404)
           .json({ status: 'error', message: "question doesn't exist!" })
       const replies = await Reply.findAll({
+        raw: true,
         nest: true,
         attributes: [
           'id',
@@ -274,6 +280,12 @@ const questionController = {
         order: [['id', 'ASC']],
         where: { questionId }
       })
+
+      // 時間格式
+      replies.forEach(
+        reply => (reply.createdAt = relativeTime(reply.createdAt))
+      )
+      
       return res.status(200).json(replies)
     } catch (error) {
       next(error)
