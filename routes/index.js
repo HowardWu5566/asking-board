@@ -13,7 +13,7 @@ const {
   authenticatedAdmin
 } = require('../middleware/auth')
 
-router.post('/api/v1/signup', userController.signUp)
+router.post('/api/v1/users', userController.signUp)
 router.post('/api/v1/users/login', userController.login)
 router.post('/api/v1/admin/login', adminController.login)
 
