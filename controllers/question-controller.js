@@ -67,7 +67,6 @@ const questionController = {
       const currentUserId = req.user.id
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId, {
-        raw: true,
         nest: true,
         attributes: [
           'id',
@@ -114,14 +113,14 @@ const questionController = {
           .json({ status: 404, message: "question doesn't exist!" })
 
       // 匿名處理
-      if (question.isAnonymous) {
-        question.User = {
-          name: '匿名',
-          avatar: 'https://i.imgur.com/YOTISNv.jpg'
-        }
+      if (question.dataValues.isAnonymous) {
+        question.dataValues.User.name = '匿名'
+        question.dataValues.User.avatar = 'https://i.imgur.com/YOTISNv.jpg'
       }
       // 時間格式
-      question.createdAt = relativeTime(question.createdAt)
+      question.dataValues.createdAt = relativeTime(
+        question.dataValues.createdAt
+      )
 
       return res.status(200).json(question)
     } catch (error) {
@@ -246,7 +245,6 @@ const questionController = {
           .status(404)
           .json({ status: 'error', message: "question doesn't exist!" })
       const replies = await Reply.findAll({
-        raw: true,
         nest: true,
         attributes: [
           'id',
@@ -277,15 +275,21 @@ const questionController = {
             attributes: ['id', 'url']
           }
         ],
-        order: [['id', 'ASC']],
+        order: [
+          ['id', 'ASC'], // replies 排序
+          [Image, 'id', 'ASC'] // replies 內的 images 排序
+        ],
         where: { questionId }
       })
 
       // 時間格式
       replies.forEach(
-        reply => (reply.createdAt = relativeTime(reply.createdAt))
+        reply =>
+          (reply.dataValues.createdAt = relativeTime(
+            reply.dataValues.createdAt
+          ))
       )
-      
+
       return res.status(200).json(replies)
     } catch (error) {
       next(error)
