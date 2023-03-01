@@ -157,6 +157,7 @@ const userController = {
         attributes: [
           'id',
           'userId',
+          'title',
           'description',
           'grade',
           'subject',
@@ -186,15 +187,29 @@ const userController = {
         attributes: ['id', 'questionId', 'comment', 'createdAt'],
         include: {
           model: Question,
-          attributes: ['id', 'description', 'grade', 'subject']
+          attributes: [
+            'id',
+            'title',
+            'description',
+            'isAnonymous',
+            'grade',
+            'subject',
+            'createdAt'
+          ],
+          include: { model: User, attributes: ['id', 'name', 'role', 'avatar'] }
         },
         where: { userId }
       })
 
-      // 處理過長的問題
+      // 處理匿名發問、過長的問題、並刪除 isAnonymous
       replies.forEach(reply => {
+        if (reply.Question.isAnonymous) {
+          reply.Question.User.name = '匿名'
+          reply.Question.User.avatar = 'https://i.imgur.com/YOTISNv.jpg'
+        }
         reply.Question.description =
           reply.Question.description.slice(0, 20) + '...'
+        delete reply.dataValues.Question.dataValues.isAnonymous
       })
 
       return res.status(200).json(replies)
@@ -222,6 +237,7 @@ const userController = {
             model: Question,
             attributes: [
               'id',
+              'title',
               'description',
               'isAnonymous',
               'grade',

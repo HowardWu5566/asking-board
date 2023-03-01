@@ -36,6 +36,7 @@ const adminController = {
         nest: true,
         attributes: [
           'id',
+          'title',
           'description',
           'isAnonymous',
           'grade',
@@ -79,6 +80,7 @@ const adminController = {
         nest: true,
         attributes: [
           'id',
+          'title',
           'description',
           'isAnonymous',
           'grade',

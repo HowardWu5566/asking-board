@@ -12,6 +12,7 @@ const questionController = {
         nest: true,
         attributes: [
           'id',
+          'title',
           'description',
           'isAnonymous',
           'grade',
@@ -70,6 +71,7 @@ const questionController = {
         nest: true,
         attributes: [
           'id',
+          'title',
           'description',
           'isAnonymous',
           'grade',
@@ -129,13 +131,14 @@ const questionController = {
   },
   postQuestion: async (req, res, next) => {
     try {
-      const { description, isAnonymous, grade, subject } = req.body
+      const { title, description, isAnonymous, grade, subject } = req.body
       const { files } = req
       const userId = req.user.id
 
       // 寫入 Questions 資料表
       const question = await Question.create({
         userId,
+        title,
         description: description.trim(),
         isAnonymous,
         grade,
@@ -162,7 +165,7 @@ const questionController = {
   putQuestion: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
-      const { description, isAnonymous, grade, subject } = req.body
+      const { title, description, isAnonymous, grade, subject } = req.body
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId)
       if (!question)
@@ -174,6 +177,7 @@ const questionController = {
           .status(401)
           .json({ status: 'error', message: 'unauthorized!' })
       const updatedQuestion = {
+        title,
         description,
         isAnonymous,
         grade,
