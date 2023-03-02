@@ -20,12 +20,12 @@ const adminController = {
         return res
           .status(401)
           .json({ status: 'error', message: 'email or password incorrect!' })
-      const admin = adminData.tojson()
+      const admin = adminData.toJSON()
       delete admin.password
       const token = jwt.sign(admin, process.env.JWT_SECRET, {
         expiresIn: '30d'
       })
-      res.status(200).json({ token, admin })
+      return res.status(200).json({ status: 'success', token, admin })
     } catch (error) {
       next(error)
     }
