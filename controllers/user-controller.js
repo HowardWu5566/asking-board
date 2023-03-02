@@ -10,6 +10,7 @@ const {
 } = require('../models')
 const { Op } = require('sequelize')
 const { imgurFileHandler } = require('../helpers/file-helper')
+const { relativeTime } = require('../helpers/date-helper')
 const ACTIVE_USER_COUNT = 10
 
 const userController = {
@@ -100,7 +101,7 @@ const userController = {
           // 回覆數
           [
             sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Questions.userId = User.id)'
+              '(SELECT COUNT(*) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Replies.userId = User.id)'
             ),
             'replyCount'
           ],
@@ -163,9 +164,18 @@ const userController = {
           'subject',
           'createdAt'
         ],
+        order: [['id', 'DESC']],
         where: { userId, isAnonymous: false } // 不顯示匿名發問
       })
-      console.log(questions)
+
+      // 調整時間格式
+      questions.forEach(
+        question =>
+          (question.dataValues.createdAt = relativeTime(
+            question.dataValues.createdAt
+          ))
+      )
+
       return res.status(200).json(questions)
     } catch (error) {
       next(error)
@@ -198,18 +208,29 @@ const userController = {
           ],
           include: { model: User, attributes: ['id', 'name', 'role', 'avatar'] }
         },
+        order: [['id', 'DESC']],
         where: { userId }
       })
 
-      // 處理匿名發問、過長的問題、並刪除 isAnonymous
       replies.forEach(reply => {
+        // 匿名發問
         if (reply.Question.isAnonymous) {
           reply.Question.User.name = '匿名'
           reply.Question.User.avatar = 'https://i.imgur.com/YOTISNv.jpg'
         }
+
+        // 時間格式
+        reply.dataValues.createdAt = relativeTime(reply.createdAt)
+        reply.Question.dataValues.createdAt = relativeTime(
+          reply.Question.createdAt
+        )
+
+        // 問題過長
         reply.Question.description =
           reply.Question.description.slice(0, 20) + '...'
-        delete reply.dataValues.Question.dataValues.isAnonymous
+
+        // 刪除不必要資料
+        delete reply.Question.dataValues.isAnonymous
       })
 
       return res.status(200).json(replies)
@@ -231,43 +252,42 @@ const userController = {
           .json({ status: 404, message: "user doesn't exist!" })
 
       const likes = await Like.findAll({
-        attributes: ['id', 'object', 'objectId', 'createdAt'],
-        include: [
-          {
-            model: Question,
-            attributes: [
-              'id',
-              'title',
-              'description',
-              'isAnonymous',
-              'grade',
-              'subject'
-            ],
-            include: {
-              model: User,
-              attributes: ['id', 'name', 'role', 'avatar']
-            }
-          },
-          {
-            model: Reply,
-            attributes: ['id', 'questionId', 'comment', 'createdAt'],
-            include: {
-              model: User,
-              attributes: ['id', 'name', 'role', 'avatar']
-            }
+        attributes: ['id', 'object', 'objectId'],
+        include: {
+          model: Question,
+          attributes: [
+            'id',
+            'title',
+            'description',
+            'isAnonymous',
+            'grade',
+            'subject',
+            'createdAt'
+          ],
+          include: {
+            model: User,
+            attributes: ['id', 'name', 'role', 'avatar']
           }
-        ],
-        where: { userId }
+        },
+        order: [['id', 'DESC']],
+        where: { userId, object: 'question' }
       })
 
-      // 問題匿名處理
       likes.forEach(like => {
+        // 匿名處理
         if (like.Question && like.Question.dataValues.isAnonymous) {
-          like.Question.dataValues.User = {
-            name: '匿名',
-            avatar: 'https://i.imgur.com/YOTISNv.jpg'
-          }
+          like.Question.dataValues.User.name = '匿名'
+          like.Question.dataValues.User.avatar =
+            'https://i.imgur.com/YOTISNv.jpg'
         }
+
+        // 時間格式
+        like.Question.dataValues.createdAt = relativeTime(
+          like.Question.createdAt
+        )
+
+        // 刪除不必要資料
+        delete like.Question.dataValues.isAnonymous
       })
 
       return res.status(200).json(likes)
@@ -288,7 +308,7 @@ const userController = {
           .status(404)
           .json({ status: 404, message: "user doesn't exist!" })
 
-      let followers = await Followship.findAll({
+      const followers = await Followship.findAll({
         attributes: [],
         include: {
           model: User,
@@ -321,13 +341,14 @@ const userController = {
           .status(404)
           .json({ status: 404, message: "user doesn't exist!" })
 
-      let followings = await Followship.findAll({
+      const followings = await Followship.findAll({
         attributes: [],
         include: {
           model: User,
           as: 'followings',
           attributes: ['id', 'name', 'role', 'avatar']
         },
+        order: [['id', 'DESC']],
         where: { followerId: userId }
       })
 
@@ -360,7 +381,7 @@ const userController = {
           ],
           [
             sequelize.literal(
-              `EXISTS(SELECT COUNT(id) FROM Followships WHERE Followships.followerId = ${sequelize.escape(
+              `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
                 currentUserId
               )} AND Followships.followingId = User.id)`
             ),
@@ -403,7 +424,7 @@ const userController = {
           ],
           [
             sequelize.literal(
-              `EXISTS(SELECT COUNT(id) FROM Followships WHERE Followships.followerId = ${sequelize.escape(
+              `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
                 currentUserId
               )} AND Followships.followingId = User.id)`
             ),
@@ -447,7 +468,7 @@ const userController = {
           ],
           [
             sequelize.literal(
-              `EXISTS(SELECT COUNT(id) FROM Followships WHERE Followships.followerId = ${sequelize.escape(
+              `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
                 currentUserId
               )} AND Followships.followingId = User.id)`
             ),
@@ -485,7 +506,7 @@ const userController = {
       if (file) updatedData.avatar = await imgurFileHandler(file)
       const user = await User.findByPk(currentUserId)
       user.update(updatedData)
-      return res.status(200).json({ k: 4 })
+      return res.status(200).json(updatedData)
     } catch (error) {
       next(error)
     }
@@ -518,8 +539,8 @@ const userController = {
       const user = await User.findByPk(req.user.id)
       if (newPassword) {
         // 密碼正確性驗證及更新資料
-        const isPassordCorrect = await bcrypt.compare(password, user.password)
-        if (!isPassordCorrect)
+        const isPasswordCorrect = await bcrypt.compare(password, user.password)
+        if (!isPasswordCorrect)
           return res
             .status(401)
             .json({ status: 'error', message: 'password incorrect' })
