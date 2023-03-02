@@ -61,7 +61,7 @@ const adminController = {
           { model: Image, attributes: ['id', 'url'] }
         ],
         group: 'id', // 只取一張圖當預覽
-        order: ['id']
+        order: [['id', 'DESC']]
       })
 
       // 時間格式
@@ -269,7 +269,7 @@ const adminController = {
           ],
           [
             sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Questions.userId = User.id)'
+              '(SELECT COUNT(*) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Replies.userId = User.id)'
             ),
             'replyCount'
           ],
@@ -292,7 +292,9 @@ const adminController = {
             ),
             'followingCount'
           ]
-        ]
+        ],
+        order: [['id', 'DESC']],
+        where: { role: { [Op.ne]: 'admin' } }
       })
       return res.status(200).json(users)
     } catch (error) {
