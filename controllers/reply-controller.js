@@ -1,4 +1,4 @@
-const { Reply, Like } = require('../models')
+const { Reply, Like, Image, sequelize } = require('../models')
 
 const replyController = {
   putReply: async (req, res, next) => {
@@ -28,18 +28,33 @@ const replyController = {
   },
   deleteReply: async (req, res, next) => {
     try {
-      const userId = req.user.id
+      const currentUserId = Number(req.user.id)
       const replyId = req.params.id
       const reply = await Reply.findByPk(replyId)
       if (!reply)
         return res
           .status(404)
           .json({ status: 404, message: "reply doesn't exist!" })
-      if (reply.userId !== userId)
+      if (reply.userId !== currentUserId)
         return res
           .status(401)
           .json({ status: 'error', message: 'unauthorized!' })
-      await reply.destroy()
+
+      // 刪除 reply 時，同時刪除關聯的 likes, images
+      await sequelize.transaction(async deleteReply => {
+        // 刪除 reply 的 likes
+        await Like.destroy({
+          where: { object: 'reply', objectId: replyId },
+          transaction: deleteReply
+        })
+        // 刪除 reply 的 images
+        await Image.destroy({
+          where: { object: 'reply', objectId: replyId },
+          transaction: deleteReply
+        })
+        return await reply.destroy({ transaction: deleteReply })
+      })
+
       return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
