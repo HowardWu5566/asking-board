@@ -7,6 +7,7 @@ const questionController = {
   getQuestions: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
+      const { grade, subject, keyword } = req.query // 搜尋功能
       const questions = await Question.findAll({
         raw: true,
         nest: true,
@@ -44,7 +45,15 @@ const questionController = {
           { model: Image, attributes: ['id', 'url'] }
         ],
         group: 'id', // 只取一張圖當預覽
-        order: [['id', 'DESC']]
+        order: [['id', 'DESC']],
+        where: {
+          grade,
+          subject,
+          [Op.or]: [
+            { title: { [Op.substring]: keyword } },
+            { description: { [Op.substring]: keyword } }
+          ]
+        }
       })
 
       // 匿名處理、createdAt 格式轉換成相對時間
