@@ -41,7 +41,7 @@ const questionController = {
           ]
         ],
         include: [
-          { model: User, attributes: ['id', 'name', 'avatar'] },
+          { model: User, attributes: ['id', 'name', 'avatar', 'role'] },
           { model: Image, attributes: ['id', 'url'] }
         ],
         group: 'id', // 只取一張圖當預覽
@@ -56,14 +56,13 @@ const questionController = {
         }
       })
 
-      // 匿名處理、createdAt 格式轉換成相對時間
       questions.forEach(question => {
+        // 匿名處理
         if (question.isAnonymous) {
-          question.User = {
-            name: '匿名',
-            avatar: 'https://i.imgur.com/YOTISNv.jpg'
-          }
+          question.User.name = '匿名'
+          question.User.avatar = 'https://i.imgur.com/YOTISNv.jpg'
         }
+        // 時間格式
         question.createdAt = relativeTime(question.createdAt)
       })
 
@@ -110,7 +109,7 @@ const questionController = {
         include: [
           {
             model: User,
-            attributes: ['id', 'name', 'avatar']
+            attributes: ['id', 'name', 'avatar', 'role']
           },
           {
             model: Image,
@@ -121,7 +120,7 @@ const questionController = {
       if (!question)
         return res
           .status(404)
-          .json({ status: 404, message: "question doesn't exist!" })
+          .json({ status: 'error', message: "question doesn't exist!" })
 
       // 匿名處理
       if (question.dataValues.isAnonymous) {
@@ -206,7 +205,7 @@ const questionController = {
       if (!question)
         return res
           .status(404)
-          .json({ status: 404, message: "question doesn't exist!" })
+          .json({ status: 'error', message: "question doesn't exist!" })
       if (question.userId !== currentuserId)
         return res
           .status(401)
@@ -281,7 +280,7 @@ const questionController = {
         include: [
           {
             model: User,
-            attributes: ['id', 'name', 'avatar']
+            attributes: ['id', 'name', 'avatar', 'role']
           },
           {
             model: Image,
