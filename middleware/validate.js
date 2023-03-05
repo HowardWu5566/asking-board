@@ -24,23 +24,6 @@ module.exports = {
     })
   ],
 
-  // 驗證註冊
-  signUpValidate: (req, res, next) => {
-    const errorInfo = validationResult(req)
-    // 編輯錯誤訊息
-    const errorMsg = errorInfo.errors.reduce((obj, error) => {
-      obj[error.param] = error.msg
-      return obj
-    }, {})
-    if (!errorInfo.isEmpty()) {
-      return res.status(422).json({
-        status: 'error',
-        message: errorMsg
-      })
-    }
-    next()
-  },
-
   // 個人資料驗證規則
   profileValidator: [
     body('name')
@@ -54,23 +37,6 @@ module.exports = {
       .isLength({ max: 200 })
       .withMessage("can't exceed 200 characters")
   ],
-
-  // 驗證個人資料
-  profileValidate: (req, res, next) => {
-    const errorInfo = validationResult(req)
-    // 編輯錯誤訊息
-    const errorMsg = errorInfo.errors.reduce((obj, error) => {
-      obj[error.param] = error.msg
-      return obj
-    }, {})
-    if (!errorInfo.isEmpty()) {
-      return res.status(422).json({
-        status: 'error',
-        message: errorMsg
-      })
-    }
-    next()
-  },
 
   // 問題驗證規則
   questionValidator: [
@@ -91,8 +57,16 @@ module.exports = {
     body('subject').isIn(subject)
   ],
 
-  // 驗證問題
-  questionValidate: (req, res, next) => {
+  // 回覆驗證規則
+  replyValidator: body('comment')
+    .trim()
+    .notEmpty()
+    .withMessage("can't be empty")
+    .isLength({ max: 5 })
+    .withMessage("can't exceed 500 characters"),
+
+  // 執行驗證
+  validate: (req, res, next) => {
     const errorInfo = validationResult(req)
     // 編輯錯誤訊息
     const errorMsg = errorInfo.errors.reduce((obj, error) => {
@@ -103,26 +77,6 @@ module.exports = {
       return res.status(422).json({
         status: 'error',
         message: errorMsg
-      })
-    }
-    next()
-  },
-
-  // 回覆驗證規則
-  replyValidator: body('comment')
-    .trim()
-    .notEmpty()
-    .withMessage("can't be empty")
-    .isLength({ max: 500 })
-    .withMessage("can't exceed 500 characters"),
-
-  //驗證回覆
-  replyValidate: (req, res, next) => {
-    const errorInfo = validationResult(req)
-    if (!errorInfo.isEmpty()) {
-      return res.status(422).json({
-        status: 'error',
-        message: errorInfo.errors[0].msg
       })
     }
     next()

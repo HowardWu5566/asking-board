@@ -1,16 +1,13 @@
 const router = require('express').Router()
 const userController = require('../../controllers/user-controller')
 const upload = require('../../middleware/multer')
-const {
-  profileValidator,
-  profileValidate
-} = require('../../middleware/validate')
+const { profileValidator, validate } = require('../../middleware/validate')
 
 router.put(
   '/',
   upload.single('avatar'),
   profileValidator,
-  profileValidate,
+  validate,
   userController.putUser
 )
 router.get('/most_replies', userController.getMostRepliesUsers)

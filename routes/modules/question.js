@@ -3,9 +3,8 @@ const questionController = require('../../controllers/question-controller')
 const upload = require('../../middleware/multer')
 const {
   questionValidator,
-  questionValidate,
   replyValidator,
-  replyValidate
+  validate
 } = require('../../middleware/validate')
 
 router.get('/', questionController.getQuestions)
@@ -13,7 +12,7 @@ router.post(
   '/',
   upload.array('images', 5),
   questionValidator,
-  questionValidate,
+  validate,
   questionController.postQuestion
 )
 router.get('/:id', questionController.getQuestion)
@@ -24,7 +23,7 @@ router.post(
   '/:id/replies',
   upload.array('images', 5),
   replyValidator,
-  replyValidate,
+  validate,
   questionController.postReply
 )
 router.post('/:id/like', questionController.postQuestionLike)
