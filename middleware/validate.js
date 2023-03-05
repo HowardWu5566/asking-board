@@ -41,6 +41,37 @@ module.exports = {
     next()
   },
 
+  // 個人資料驗證規則
+  profileValidator: [
+    body('name')
+      .trim()
+      .notEmpty()
+      .withMessage("can't be empty")
+      .isLength({ max: 50 })
+      .withMessage("can't exceed 50 characters"),
+    body('introduction')
+      .trim()
+      .isLength({ max: 200 })
+      .withMessage("can't exceed 200 characters")
+  ],
+
+  // 驗證個人資料
+  profileValidate: (req, res, next) => {
+    const errorInfo = validationResult(req)
+    // 編輯錯誤訊息
+    const errorMsg = errorInfo.errors.reduce((obj, error) => {
+      obj[error.param] = error.msg
+      return obj
+    }, {})
+    if (!errorInfo.isEmpty()) {
+      return res.status(422).json({
+        status: 'error',
+        message: errorMsg
+      })
+    }
+    next()
+  },
+
   // 問題驗證規則
   questionValidator: [
     body('title')

@@ -499,7 +499,7 @@ const userController = {
       if (file) updatedData.avatar = await imgurFileHandler(file)
       const user = await User.findByPk(currentUserId)
       user.update(updatedData)
-      return res.status(200).json(updatedData)
+      return res.status(200).json({ status: 'success', user: updatedData })
     } catch (error) {
       next(error)
     }
