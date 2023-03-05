@@ -17,22 +17,15 @@ const userController = {
   // 註冊
   signUp: async (req, res, next) => {
     try {
-      const { name, email, password, confirmPassword } = req.body
-      const messages = {}
+      const { name, email, password } = req.body
       const userEmail = await User.findOne({ where: { email } })
-      if (!name.trim()) messages.name = 'please enter name'
-      if (userEmail) messages.email = 'email has been registered'
-      if (!email.trim()) messages.email = 'please enter email'
-      if (password !== confirmPassword)
-        messages.password = "password doesn't match"
-      if (Object.keys(messages).length !== 0) {
+      if (userEmail)
         return res.status(422).json({
           status: 'error',
-          messages,
+          messages: 'email has been registered',
           name,
           email
         })
-      }
 
       // 建立資料
       const newUser = await User.create({

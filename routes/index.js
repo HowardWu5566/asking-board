@@ -12,8 +12,14 @@ const {
   authenticatedUser,
   authenticatedAdmin
 } = require('../middleware/auth')
+const { signUpValidator, signUpValidate } = require('../middleware/validate')
 
-router.post('/api/v1/users', userController.signUp)
+router.post(
+  '/api/v1/users',
+  signUpValidator,
+  signUpValidate,
+  userController.signUp
+)
 router.post('/api/v1/users/login', userController.login)
 router.post('/api/v1/admin/login', adminController.login)
 
