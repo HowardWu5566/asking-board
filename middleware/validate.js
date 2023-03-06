@@ -62,7 +62,7 @@ module.exports = {
     .trim()
     .notEmpty()
     .withMessage("can't be empty")
-    .isLength({ max: 5 })
+    .isLength({ max: 500 })
     .withMessage("can't exceed 500 characters"),
 
   // 執行驗證
