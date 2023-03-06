@@ -2,6 +2,7 @@ const { User, Question, Reply, Like, Image, sequelize } = require('../models')
 const { Op } = require('sequelize')
 const { imgurFileHandler } = require('../helpers/file-helper')
 const { relativeTime } = require('../helpers/date-helper')
+const { anonymousHandler } = require('../helpers/anonymous-helper')
 
 const questionController = {
   getQuestions: async (req, res, next) => {
@@ -59,8 +60,7 @@ const questionController = {
       questions.forEach(question => {
         // 匿名處理
         if (question.isAnonymous) {
-          question.User.name = '匿名'
-          question.User.avatar = 'https://i.imgur.com/YOTISNv.jpg'
+          anonymousHandler(question.User)
         }
         // 時間格式
         question.createdAt = relativeTime(question.createdAt)
@@ -123,10 +123,10 @@ const questionController = {
           .json({ status: 'error', message: "question doesn't exist!" })
 
       // 匿名處理
-      if (question.dataValues.isAnonymous) {
-        question.dataValues.User.name = '匿名'
-        question.dataValues.User.avatar = 'https://i.imgur.com/YOTISNv.jpg'
+      if (question.isAnonymous) {
+        anonymousHandler(question.User)
       }
+
       // 時間格式
       question.dataValues.createdAt = relativeTime(
         question.dataValues.createdAt

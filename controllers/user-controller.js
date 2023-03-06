@@ -12,6 +12,7 @@ const { Op } = require('sequelize')
 const { imgurFileHandler } = require('../helpers/file-helper')
 const { relativeTime } = require('../helpers/date-helper')
 const ACTIVE_USER_COUNT = 10
+const { anonymousHandler } = require('../helpers/anonymous-helper')
 
 const userController = {
   // 註冊
@@ -208,8 +209,7 @@ const userController = {
       replies.forEach(reply => {
         // 匿名發問
         if (reply.Question.isAnonymous) {
-          reply.Question.User.name = '匿名'
-          reply.Question.User.avatar = 'https://i.imgur.com/YOTISNv.jpg'
+          anonymousHandler(reply.Question.User)
         }
 
         // 時間格式
@@ -268,10 +268,8 @@ const userController = {
 
       likes.forEach(like => {
         // 匿名處理
-        if (like.Question && like.Question.dataValues.isAnonymous) {
-          like.Question.dataValues.User.name = '匿名'
-          like.Question.dataValues.User.avatar =
-            'https://i.imgur.com/YOTISNv.jpg'
+        if (like.Question.isAnonymous) {
+          anonymousHandler(like.Question.User)
         }
 
         // 時間格式
