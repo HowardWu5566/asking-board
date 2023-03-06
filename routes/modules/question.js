@@ -16,7 +16,13 @@ router.post(
   questionController.postQuestion
 )
 router.get('/:id', questionController.getQuestion)
-router.put('/:id', questionController.putQuestion)
+router.put(
+  '/:id',
+  upload.array('images', 5),
+  questionValidator,
+  validate,
+  questionController.putQuestion
+)
 router.delete('/:id', questionController.deleteQuestion)
 router.get('/:id/replies', questionController.getReplies)
 router.post(

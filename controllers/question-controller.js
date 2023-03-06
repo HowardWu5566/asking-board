@@ -173,7 +173,9 @@ const questionController = {
   putQuestion: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
-      const { title, description, isAnonymous, grade, subject } = req.body
+      const { title, description, isAnonymous, grade, subject, images } =
+        req.body
+      const { files } = req
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId)
       if (!question)
@@ -184,14 +186,54 @@ const questionController = {
         return res
           .status(401)
           .json({ status: 'error', message: 'unauthorized!' })
-      const updatedQuestion = {
-        title,
-        description,
-        isAnonymous,
-        grade,
-        subject
-      }
-      await question.update(updatedQuestion)
+
+      await sequelize.transaction(async putQuestion => {
+        // 修改問題
+        await question.update(
+          {
+            title,
+            description,
+            isAnonymous,
+            grade,
+            subject
+          },
+          { transaction: putQuestion }
+        )
+        const existedImgs = await Image.findAll({
+          raw: true,
+          nest: true,
+          attributes: ['id'],
+          where: { object: 'question', objectId: questionId },
+          transaction: putQuestion
+        })
+        const deletedImgIds = existedImgs
+          .filter(item => !images?.includes(item.id.toString()))
+          .map(item => item.id)
+
+        // 修改後移除圖片
+        await Image.destroy({
+          where: {
+            id: { [Op.in]: deletedImgIds }
+          },
+          transaction: putQuestion
+        })
+
+        // 修改後新增圖片
+        if (files.length) {
+          for (const file of files) {
+            await Image.create(
+              {
+                object: 'question',
+                objectId: question.dataValues.id,
+                url: await imgurFileHandler(file),
+                isSeed: false
+              },
+              { transaction: putQuestion }
+            )
+          }
+        }
+      })
+
       return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
