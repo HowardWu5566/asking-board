@@ -1,11 +1,14 @@
 const { Reply, Like, Image, sequelize } = require('../models')
+const { Op } = require('sequelize')
+const { imgurFileHandler } = require('../helpers/file-helper')
 
 const replyController = {
   putReply: async (req, res, next) => {
     try {
       const userId = req.user.id
-      const { comment } = req.body
-      const replyId = req.params.id
+      const { comment, images } = req.body
+      const { files } = req
+      const replyId = Number(req.params.id)
       const reply = await Reply.findByPk(replyId)
       if (!reply)
         return res
@@ -15,12 +18,51 @@ const replyController = {
         return res
           .status(401)
           .json({ status: 'error', message: 'unauthorized!' })
-      const updatedReply = {
-        userId,
-        questionId: reply.questionId,
-        comment: comment.trim()
-      }
-      await reply.update(updatedReply)
+
+      await sequelize.transaction(async putReply => {
+        // 修改回覆
+        const updatedReply = {
+          userId,
+          questionId: reply.questionId,
+          comment: comment.trim()
+        }
+        await reply.update(updatedReply, { transaction: putReply })
+
+        const existedImgs = await Image.findAll({
+          raw: true,
+          nest: true,
+          attributes: ['id'],
+          where: { object: 'reply', objectId: replyId },
+          transaction: putReply
+        })
+        const deletedImgIds = existedImgs
+          .filter(item => !images?.includes(item.id.toString()))
+          .map(item => item.id)
+
+        // 修改後移除圖片
+        await Image.destroy({
+          where: {
+            id: { [Op.in]: deletedImgIds }
+          },
+          transaction: putReply
+        })
+
+        // 修改後新增圖片
+        if (files.length) {
+          for (const file of files) {
+            await Image.create(
+              {
+                object: 'reply',
+                objectId: reply.dataValues.id,
+                url: await imgurFileHandler(file),
+                isSeed: false
+              },
+              { transaction: putReply }
+            )
+          }
+        }
+      })
+
       return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
