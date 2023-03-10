@@ -34,7 +34,8 @@ const userController = {
         name,
         email,
         password: bcrypt.hashSync(password, 10),
-        role
+        role,
+        isLocalAccount: true
       })
 
       // 刪除敏感資訊、傳回客戶端
