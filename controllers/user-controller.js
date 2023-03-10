@@ -486,6 +486,22 @@ const userController = {
     }
   },
 
+  // 取得登入者資料
+  getCurrentUser: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const currentUser = await User.findByPk(currentUserId, {
+        attributes: ['id', 'name', 'introduction', 'avatar']
+      })
+      if (!currentUser || currentUser.role === 'admin')
+        return res
+          .status(404)
+          .json({ status: 404, message: "user doesn't exist!" })
+      return res.status(200).json({ status: 'success', currentUser })
+    } catch (error) {
+      next(error)
+    }
+  },
   // 修改個人資料
   putUser: async (req, res, next) => {
     try {
@@ -500,6 +516,23 @@ const userController = {
       const user = await User.findByPk(currentUserId)
       user.update(updatedData)
       return res.status(200).json({ status: 'success', user: updatedData })
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  // 取得登入者帳戶設定
+  getUserAccount: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const currentUser = await User.findByPk(currentUserId, {
+        attributes: ['id', 'role', 'email']
+      })
+      if (!currentUser || currentUser.role === 'admin')
+        return res
+          .status(404)
+          .json({ status: 404, message: "user doesn't exist!" })
+      return res.status(200).json({ status: 'success', currentUser })
     } catch (error) {
       next(error)
     }

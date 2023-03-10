@@ -10,10 +10,12 @@ router.put(
   validate,
   userController.putUser
 )
+router.get('/', userController.getCurrentUser)
 router.get('/most_replies', userController.getMostRepliesUsers)
 router.get('/most_followers', userController.getMostFollowersUsers)
 router.get('/most_liked', userController.getMostLikedUsers)
 router.put('/account', userController.putUserAccount)
+router.get('/account', userController.getUserAccount)
 router.get('/:id', userController.getUser)
 router.get('/:id/questions', userController.getUserQuestions)
 router.get('/:id/replies', userController.getUserReplies)
