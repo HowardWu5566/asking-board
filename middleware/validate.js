@@ -8,8 +8,8 @@ module.exports = {
       .trim()
       .notEmpty()
       .withMessage("can't be empty")
-      .isLength({ max: 50 })
-      .withMessage("can't exceed 50 characters"),
+      .isLength({ max: 20 })
+      .withMessage('字數超出上限！'),
     body('email').isEmail(),
     body('password')
       .notEmpty()
@@ -51,12 +51,12 @@ module.exports = {
       .trim()
       .notEmpty()
       .withMessage("can't be empty")
-      .isLength({ max: 50 })
-      .withMessage("can't exceed 50 characters"),
+      .isLength({ max: 20 })
+      .withMessage('字數超出上限！'),
     body('introduction')
       .trim()
-      .isLength({ max: 200 })
-      .withMessage("can't exceed 200 characters")
+      .isLength({ max: 150 })
+      .withMessage('字數超出上限！')
   ],
 
   // 問題驗證規則
@@ -65,14 +65,14 @@ module.exports = {
       .trim()
       .notEmpty()
       .withMessage("can't be empty")
-      .isLength({ min: 3, max: 50 })
-      .withMessage('must be between 3 and 50 characters'),
+      .isLength({ max: 50 })
+      .withMessage('字數超出上限！'),
     body('description')
       .trim()
       .notEmpty()
       .withMessage("can't be empty")
-      .isLength({ min: 10, max: 500 })
-      .withMessage('must be between 10 and 500 characters'),
+      .isLength({ max: 500 })
+      .withMessage('字數超出上限！'),
     body('isAnonymous').trim().isBoolean().withMessage('must be a Boolean'),
     body('grade').isIn(grade),
     body('subject').isIn(subject)
@@ -84,7 +84,7 @@ module.exports = {
     .notEmpty()
     .withMessage("can't be empty")
     .isLength({ max: 500 })
-    .withMessage("can't exceed 500 characters"),
+    .withMessage('字數超出上限！'),
 
   // 執行驗證
   validate: (req, res, next) => {
