@@ -25,6 +25,26 @@ module.exports = {
     body('role').isIn(role)
   ],
 
+  // 帳戶設定驗證
+  accountValidator: [
+    body('role').isIn(role),
+    body('email').isEmail(),
+    body('newPassword')
+      .optional()
+      .isLength({ min: 8 })
+      .withMessage('should be at least 8 characters long'),
+    body('confirmPassword').custom((value, { req }) => {
+      if (value !== req.body.newPassword) {
+        throw new Error('password confirmation does not match new password')
+      }
+      return true
+    }),
+    body('password')
+      .if((_, { req }) => req.body.newPassword !== undefined)
+      .notEmpty()
+      .withMessage("can't be empty")
+  ],
+
   // 個人資料驗證規則
   profileValidator: [
     body('name')

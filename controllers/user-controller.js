@@ -526,7 +526,7 @@ const userController = {
     try {
       const currentUserId = req.user.id
       const currentUser = await User.findByPk(currentUserId, {
-        attributes: ['id', 'role', 'email']
+        attributes: ['id', 'role', 'email', 'isLocalAccount']
       })
       if (!currentUser || currentUser.role === 'admin')
         return res
@@ -542,41 +542,47 @@ const userController = {
   putUserAccount: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
-      const { role, password, confirmPassword, newPassword } = req.body
+      const { role, email, password, newPassword } = req.body
 
-      // 修改密碼的驗證
-      // 表單驗證
-      if (newPassword) {
-        const messages = {}
-        if (!password) messages.password = 'enter original password!'
-        if (!confirmPassword)
-          messages.confirmPassword = 'enter original password!'
-        if (password !== confirmPassword)
-          messages.match = "passwords don't match"
-        if (Object.keys(messages).length !== 0) {
-          return res.status(422).json({
-            status: 'error',
-            messages,
-            role
-          })
+      const currentUser = await User.findByPk(currentUserId)
+      const updatedData = {}
+
+      // 本站帳號才能修改信箱與密碼
+      if (currentUser.isLocalAccount) {
+        const user = await User.findOne({ email })
+        if (user) {
+          return res
+            .status(422)
+            .json({ status: 'error', message: 'email 已重複註冊' })
+        } else if (email !== currentUser.email) {
+          updatedData.email = email
+        }
+
+        // 舊密碼驗證
+        if (password) {
+          const isPasswordCorrect = await bcrypt.compare(
+            password,
+            currentUser.password
+          )
+          if (!isPasswordCorrect) {
+            return res
+              .status(401)
+              .json({ status: 'error', message: 'password incorrect' })
+          } else {
+            updatedData.password = await bcrypt.hashSync(newPassword, 10)
+          }
         }
       }
 
-      const user = await User.findByPk(req.user.id)
-      if (newPassword) {
-        // 密碼正確性驗證及更新資料
-        const isPasswordCorrect = await bcrypt.compare(password, user.password)
-        if (!isPasswordCorrect)
-          return res
-            .status(401)
-            .json({ status: 'error', message: 'password incorrect' })
-        user.update({ role, password: bcrypt.hashSync(newPassword, 10) })
-      } else {
-        // 未修改密碼更新資料
-        if (role !== user.role) user.update({ role })
+      // 本站與第三方登入都能修改 role
+      if (role !== currentUser.role) {
+        updatedData.role = role
       }
 
-      return res.status(200).json({ status: 'success', role })
+      // 更新資料
+      await currentUser.update(updatedData)
+
+      return res.status(200).json({ status: 'success', role, email })
     } catch (error) {
       next(error)
     }
