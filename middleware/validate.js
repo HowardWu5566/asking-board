@@ -1,5 +1,5 @@
 const { body, validationResult } = require('express-validator')
-const { grade, subject } = require('../config/questionInfo')
+const { grade, subject, role } = require('../config/dropdown-value')
 
 module.exports = {
   // 註冊驗證規則
@@ -21,7 +21,8 @@ module.exports = {
         throw new Error('password confirmation does not match password')
       }
       return true
-    })
+    }),
+    body('role').isIn(role)
   ],
 
   // 個人資料驗證規則

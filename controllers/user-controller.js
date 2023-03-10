@@ -18,21 +18,23 @@ const userController = {
   // 註冊
   signUp: async (req, res, next) => {
     try {
-      const { name, email, password } = req.body
+      const { name, email, password, role } = req.body
       const userEmail = await User.findOne({ where: { email } })
       if (userEmail)
         return res.status(422).json({
           status: 'error',
-          messages: 'email has been registered',
+          messages: 'email 已重複註冊！',
           name,
-          email
+          email,
+          role
         })
 
       // 建立資料
       const newUser = await User.create({
         name,
         email,
-        password: bcrypt.hashSync(password, 10)
+        password: bcrypt.hashSync(password, 10),
+        role
       })
 
       // 刪除敏感資訊、傳回客戶端

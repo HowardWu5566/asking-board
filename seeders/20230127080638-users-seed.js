@@ -26,7 +26,7 @@ module.exports = {
         name: `seed-teacher${index + 1}`,
         email: `teacher${index + 1}@example.com`,
         password: bcrypt.hashSync(DEFAULT_PASSWORD, bcrypt.genSaltSync(10)),
-        role: 'teacher',
+        role: '老師',
         avatar: `https://loremflickr.com/320/240/man,woman/?lock=${index + 1}`,
         introduction: '我是個老師，是種子資料',
         isLocalAccount: true,
@@ -37,7 +37,7 @@ module.exports = {
         name: `seed-student${index + 1}`,
         email: `student${index + 1}@example.com`,
         password: bcrypt.hashSync(DEFAULT_PASSWORD, bcrypt.genSaltSync(10)),
-        role: 'student',
+        role: '學生',
         avatar: `https://loremflickr.com/320/240/man,woman/?lock=${
           index + TEACHERS_AMOUNT + 1
         }`,
