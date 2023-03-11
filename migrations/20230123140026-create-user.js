@@ -24,7 +24,7 @@ module.exports = {
       },
       role: {
         allowNull: false,
-        defaultValue: 'student',
+        defaultValue: '學生',
         type: Sequelize.STRING
       },
       avatar: {
