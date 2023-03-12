@@ -15,7 +15,7 @@ module.exports = {
       raw: true,
       nest: true,
       where: {
-        role: 'teacher',
+        role: '老師',
         name: {
           [Sequelize.Op.like]: 'seed-teacher%'
         }
@@ -26,7 +26,7 @@ module.exports = {
       raw: true,
       nest: true,
       where: {
-        role: 'student',
+        role: '學生',
         name: {
           [Sequelize.Op.like]: 'seed-student%'
         }
