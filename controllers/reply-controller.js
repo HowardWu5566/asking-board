@@ -11,13 +11,9 @@ const replyController = {
       const replyId = Number(req.params.id)
       const reply = await Reply.findByPk(replyId)
       if (!reply)
-        return res
-          .status(404)
-          .json({ status: 'error', message: "reply doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '回覆不存在' })
       if (reply.userId !== userId)
-        return res
-          .status(401)
-          .json({ status: 'error', message: 'unauthorized!' })
+        return res.status(401).json({ status: 'error', message: '無權限' })
 
       await sequelize.transaction(async putReply => {
         // 修改回覆
@@ -74,13 +70,9 @@ const replyController = {
       const replyId = req.params.id
       const reply = await Reply.findByPk(replyId)
       if (!reply)
-        return res
-          .status(404)
-          .json({ status: 404, message: "reply doesn't exist!" })
+        return res.status(404).json({ status: 404, message: '回覆不存在' })
       if (reply.userId !== currentUserId)
-        return res
-          .status(401)
-          .json({ status: 'error', message: 'unauthorized!' })
+        return res.status(401).json({ status: 'error', message: '無權限' })
 
       // 刪除 reply 時，同時刪除關聯的 likes, images
       await sequelize.transaction(async deleteReply => {
@@ -108,9 +100,7 @@ const replyController = {
       const replyId = req.params.id
       const reply = await Reply.findByPk(replyId)
       if (!reply)
-        return res
-          .status(404)
-          .json({ status: 'error', message: 'reply doesn,t exist!' })
+        return res.status(404).json({ status: 'error', message: '回覆不存在' })
       const like = await Like.findOrCreate({
         where: {
           userId,
@@ -122,7 +112,7 @@ const replyController = {
       if (!like[1])
         return res
           .status(422)
-          .json({ status: 'error', message: 'already like the reply!' })
+          .json({ status: 'error', message: '已點讚此回覆' })
       return res.status(422).json({ status: 'success' })
     } catch (error) {
       next(error)
@@ -134,9 +124,7 @@ const replyController = {
       const replyId = req.params.id
       const reply = await Reply.findByPk(replyId)
       if (!reply)
-        return res
-          .status(404)
-          .json({ status: 'error', message: 'reply doesn,t exist!' })
+        return res.status(404).json({ status: 'error', message: '回覆不存在' })
       const like = await Like.findOne({
         where: {
           userId,
@@ -147,7 +135,7 @@ const replyController = {
       if (!like)
         return res
           .status(422)
-          .json({ status: 'error', message: "haven't liked the reply!" })
+          .json({ status: 'error', message: '尚未點讚此回覆' })
       await like.destroy()
       return res.status(200).json({ status: 'success' })
     } catch (error) {

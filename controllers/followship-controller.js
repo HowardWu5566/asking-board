@@ -8,12 +8,12 @@ const followshipController = {
       if (userId === followingId)
         return res
           .status(422)
-          .json({ status: 'error', message: "You can't follow yourself!" })
+          .json({ status: 'error', message: '不可追蹤自己' })
       const user = await User.findByPk(followingId)
       if (!user || user.role === 'admin')
         return res
           .status(404)
-          .json({ status: 'error', message: "user doesn't exist!" })
+          .json({ status: 'error', message: '使用者不存在' })
       const followship = await Followship.findOrCreate({
         where: {
           followingId,
@@ -24,7 +24,7 @@ const followshipController = {
       if (!followship[1])
         return res
           .status(422)
-          .json({ status: 'error', message: 'You have followed the user!' })
+          .json({ status: 'error', message: '已追蹤此使用者' })
       res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
@@ -46,11 +46,11 @@ const followshipController = {
       if (!user || user.role === 'admin')
         return res
           .status(404)
-          .json({ status: 'error', message: "user doesn't exist!" })
+          .json({ status: 'error', message: '使用者不存在' })
       if (!followship)
         return res
           .status(422)
-          .json({ status: 'error', message: "You haven't followed the user!" })
+          .json({ status: 'error', message: '尚未追蹤此使用者' })
       await followship.destroy()
       res.status(200).json({ status: 'success' })
     } catch (error) {

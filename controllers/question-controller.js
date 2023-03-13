@@ -118,9 +118,7 @@ const questionController = {
         ]
       })
       if (!question)
-        return res
-          .status(404)
-          .json({ status: 'error', message: "question doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
 
       // 匿名處理
       if (question.isAnonymous) {
@@ -179,13 +177,9 @@ const questionController = {
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId)
       if (!question)
-        return res
-          .status(404)
-          .json({ status: 'error', message: "question doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
       if (question.userId !== currentUserId)
-        return res
-          .status(401)
-          .json({ status: 'error', message: 'unauthorized!' })
+        return res.status(401).json({ status: 'error', message: '無權限' })
 
       await sequelize.transaction(async putQuestion => {
         // 修改問題
@@ -245,13 +239,9 @@ const questionController = {
       const questionId = req.params.id
       const question = await Question.findByPk(questionId)
       if (!question)
-        return res
-          .status(404)
-          .json({ status: 'error', message: "question doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
       if (question.userId !== currentuserId)
-        return res
-          .status(401)
-          .json({ status: 'error', message: 'unauthorized!' })
+        return res.status(401).json({ status: 'error', message: '無權限' })
 
       // 刪除 question 時，同時刪除關聯的 replies, likes, images
       await sequelize.transaction(async deleteQuestion => {
@@ -295,9 +285,7 @@ const questionController = {
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId)
       if (!question)
-        return res
-          .status(404)
-          .json({ status: 'error', message: "question doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
       const replies = await Reply.findAll({
         nest: true,
         attributes: [
@@ -357,9 +345,7 @@ const questionController = {
       const questionId = req.params.id
       const question = await Question.findByPk(questionId)
       if (!question)
-        return res
-          .status(404)
-          .json({ status: 'error', message: "question doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
 
       // 寫入 Replies 資料表
       const reply = await Reply.create({
@@ -391,9 +377,7 @@ const questionController = {
       const questionId = req.params.id
       const question = await Question.findByPk(questionId)
       if (!question)
-        return res
-          .status(404)
-          .json({ status: 'error', message: "question doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
       const like = await Like.findOrCreate({
         where: {
           userId,
@@ -407,7 +391,7 @@ const questionController = {
       if (!like[1])
         return res
           .status(422)
-          .json({ status: 'error', message: 'already like the question!' })
+          .json({ status: 'error', message: '已收藏此問題' })
       return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
@@ -419,9 +403,7 @@ const questionController = {
       const questionId = req.params.id
       const question = await Question.findByPk(questionId)
       if (!question)
-        return res
-          .status(404)
-          .json({ status: 'error', message: "question doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
       const like = await Like.findOne({
         where: {
           userId,
@@ -432,7 +414,7 @@ const questionController = {
       if (!like)
         return res
           .status(422)
-          .json({ status: 'error', message: "haven't liked the question!" })
+          .json({ status: 'error', message: '尚未收藏此問題' })
       await like.destroy()
       return res.status(200).json({ status: 'success' })
     } catch (error) {

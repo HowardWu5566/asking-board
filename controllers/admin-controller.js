@@ -19,7 +19,7 @@ const adminController = {
       if (!adminData || !isPasswordCorrect)
         return res
           .status(401)
-          .json({ status: 'error', message: 'email or password incorrect!' })
+          .json({ status: 'error', message: 'email 或密碼錯誤' })
       const admin = adminData.toJSON()
       delete admin.password
       const token = jwt.sign(admin, process.env.JWT_SECRET, {
@@ -112,9 +112,7 @@ const adminController = {
         ]
       })
       if (!question)
-        return res
-          .status(404)
-          .json({ status: 'error', message: "question doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
 
       // 時間格式
       question.dataValues.createdAt = relativeTime(
@@ -133,7 +131,7 @@ const adminController = {
       if (!question)
         return res.status(404).json({
           status: 'error',
-          message: "question doesn't exist!"
+          message: '問題不存在'
         })
 
       // 刪除 question 時，同時刪除關聯的 replies, likes, images
@@ -177,9 +175,7 @@ const adminController = {
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId)
       if (!question)
-        return res
-          .status(404)
-          .json({ status: 'error', message: "question doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
       const replies = await Reply.findAll({
         nest: true,
         attributes: [
@@ -230,7 +226,7 @@ const adminController = {
       if (!reply)
         return res.status(404).json({
           status: 'error',
-          message: "reply doesn't exist!"
+          message: '回覆不存在'
         })
 
       // 刪除 reply 時，同時刪除關聯的 likes, images
