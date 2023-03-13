@@ -23,7 +23,7 @@ const userController = {
       if (userEmail)
         return res.status(422).json({
           status: 'error',
-          messages: 'email 已註冊',
+          message: 'email 已註冊',
           name,
           email,
           role
