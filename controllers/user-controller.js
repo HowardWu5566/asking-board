@@ -58,12 +58,12 @@ const userController = {
       if (!userData)
         return res
           .status(401)
-          .json({ status: 'error', message: 'email or password incorrect' })
+          .json({ status: 'error', message: 'email 或密碼錯誤' })
       const isPassordCorrect = await bcrypt.compare(password, userData.password)
       if (!isPassordCorrect)
         return res
           .status(401)
-          .json({ status: 'error', message: 'email or password incorrect' })
+          .json({ status: 'error', message: 'email 或密碼錯誤' })
 
       // 製作 token
       const user = userData.toJSON()
@@ -130,9 +130,7 @@ const userController = {
         ]
       })
       if (!user || user.role === 'admin')
-        return res
-          .status(404)
-          .json({ status: 404, message: "user doesn't exist!" })
+        return res.status(404).json({ status: 404, message: '使用者不存在' })
       return res.status(200).json(user)
     } catch (error) {
       next(error)
@@ -147,9 +145,7 @@ const userController = {
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res
-          .status(404)
-          .json({ status: 404, message: "user doesn't exist!" })
+        return res.status(404).json({ status: 404, message: '使用者不存在' })
 
       const questions = await Question.findAll({
         attributes: [
@@ -186,9 +182,7 @@ const userController = {
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res
-          .status(404)
-          .json({ status: 404, message: "user doesn't exist!" })
+        return res.status(404).json({ status: 404, message: '使用者不存在' })
 
       const replies = await Reply.findAll({
         attributes: ['id', 'questionId', 'comment', 'createdAt'],
@@ -243,9 +237,7 @@ const userController = {
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res
-          .status(404)
-          .json({ status: 404, message: "user doesn't exist!" })
+        return res.status(404).json({ status: 404, message: '使用者不存在' })
 
       const likes = await Like.findAll({
         attributes: ['id', 'object', 'objectId'],
@@ -298,9 +290,7 @@ const userController = {
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res
-          .status(404)
-          .json({ status: 404, message: "user doesn't exist!" })
+        return res.status(404).json({ status: 404, message: '使用者不存在' })
 
       const followers = await Followship.findAll({
         attributes: [],
@@ -331,9 +321,7 @@ const userController = {
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res
-          .status(404)
-          .json({ status: 404, message: "user doesn't exist!" })
+        return res.status(404).json({ status: 404, message: '使用者不存在' })
 
       const followings = await Followship.findAll({
         attributes: [],
@@ -495,9 +483,7 @@ const userController = {
         attributes: ['id', 'name', 'introduction', 'avatar']
       })
       if (!currentUser || currentUser.role === 'admin')
-        return res
-          .status(404)
-          .json({ status: 404, message: "user doesn't exist!" })
+        return res.status(404).json({ status: 404, message: '使用者不存在' })
       return res.status(200).json({ status: 'success', currentUser })
     } catch (error) {
       next(error)
@@ -530,9 +516,7 @@ const userController = {
         attributes: ['id', 'role', 'email', 'isLocalAccount']
       })
       if (!currentUser || currentUser.role === 'admin')
-        return res
-          .status(404)
-          .json({ status: 404, message: "user doesn't exist!" })
+        return res.status(404).json({ status: 404, message: '使用者不存在' })
       return res.status(200).json({ status: 'success', currentUser })
     } catch (error) {
       next(error)
@@ -568,7 +552,7 @@ const userController = {
           if (!isPasswordCorrect) {
             return res
               .status(401)
-              .json({ status: 'error', message: 'password incorrect' })
+              .json({ status: 'error', message: '密碼錯誤' })
           } else {
             updatedData.password = await bcrypt.hashSync(newPassword, 10)
           }
