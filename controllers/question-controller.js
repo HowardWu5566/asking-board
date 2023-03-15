@@ -2,7 +2,10 @@ const { User, Question, Reply, Like, Image, sequelize } = require('../models')
 const { Op } = require('sequelize')
 const { imgurFileHandler } = require('../helpers/file-helper')
 const { relativeTime } = require('../helpers/date-helper')
-const { anonymousHandler } = require('../helpers/anonymous-helper')
+const {
+  anonymousHandler,
+  getAccountHandler
+} = require('../helpers/user-data-helper')
 
 const questionController = {
   getQuestions: async (req, res, next) => {
@@ -42,7 +45,10 @@ const questionController = {
           ]
         ],
         include: [
-          { model: User, attributes: ['id', 'name', 'avatar', 'role'] },
+          {
+            model: User,
+            attributes: ['id', 'name', 'email', 'avatar', 'role']
+          },
           { model: Image, attributes: ['id', 'url'] }
         ],
         group: 'id', // 只取一張圖當預覽
@@ -61,6 +67,8 @@ const questionController = {
         // 匿名處理
         if (question.isAnonymous) {
           anonymousHandler(question.User)
+        } else {
+          getAccountHandler(question.User)
         }
         // 時間格式
         question.createdAt = relativeTime(question.createdAt)
@@ -109,7 +117,7 @@ const questionController = {
         include: [
           {
             model: User,
-            attributes: ['id', 'name', 'avatar', 'role']
+            attributes: ['id', 'name', 'email', 'avatar', 'role']
           },
           {
             model: Image,
@@ -120,9 +128,12 @@ const questionController = {
       if (!question)
         return res.status(404).json({ status: 'error', message: '問題不存在' })
 
-      // 匿名處理
       if (question.isAnonymous) {
-        anonymousHandler(question.User)
+        // 匿名處理
+        anonymousHandler(question.User.dataValues)
+      } else {
+        // 取得 account 欄位
+        getAccountHandler(question.User.dataValues)
       }
 
       // 時間格式
@@ -310,7 +321,7 @@ const questionController = {
         include: [
           {
             model: User,
-            attributes: ['id', 'name', 'avatar', 'role']
+            attributes: ['id', 'name', 'email', 'avatar', 'role']
           },
           {
             model: Image,
@@ -324,13 +335,12 @@ const questionController = {
         where: { questionId }
       })
 
-      // 時間格式
-      replies.forEach(
-        reply =>
-          (reply.dataValues.createdAt = relativeTime(
-            reply.dataValues.createdAt
-          ))
-      )
+      replies.forEach(reply => {
+        // 時間格式
+        reply.dataValues.createdAt = relativeTime(reply.dataValues.createdAt)
+        // 取得 account 欄位
+        getAccountHandler(reply.User.dataValues)
+      })
 
       return res.status(200).json(replies)
     } catch (error) {

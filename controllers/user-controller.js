@@ -12,7 +12,10 @@ const { Op } = require('sequelize')
 const { imgurFileHandler } = require('../helpers/file-helper')
 const { relativeTime } = require('../helpers/date-helper')
 const ACTIVE_USER_COUNT = 10
-const { anonymousHandler } = require('../helpers/anonymous-helper')
+const {
+  anonymousHandler,
+  getAccountHandler
+} = require('../helpers/user-data-helper')
 
 const userController = {
   // 註冊
@@ -40,6 +43,8 @@ const userController = {
 
       // 刪除敏感資訊、傳回客戶端
       delete newUser.dataValues.password
+      delete newUser.dataValues.createdAt
+      delete newUser.dataValues.updatedAt
       return res.json({ status: 'success', user: newUser.dataValues })
     } catch (error) {
       next(error)
@@ -83,6 +88,7 @@ const userController = {
         attributes: [
           'id',
           'name',
+          'email',
           'role',
           'avatar',
           'introduction',
@@ -131,6 +137,10 @@ const userController = {
       })
       if (!user || user.role === 'admin')
         return res.status(404).json({ status: 404, message: '使用者不存在' })
+
+      // 取得 account 欄位
+      getAccountHandler(user.dataValues)
+
       return res.status(200).json(user)
     } catch (error) {
       next(error)
@@ -197,16 +207,22 @@ const userController = {
             'subject',
             'createdAt'
           ],
-          include: { model: User, attributes: ['id', 'name', 'role', 'avatar'] }
+          include: {
+            model: User,
+            attributes: ['id', 'name', 'email', 'role', 'avatar']
+          }
         },
         order: [['id', 'DESC']],
         where: { userId }
       })
 
       replies.forEach(reply => {
-        // 匿名發問
         if (reply.Question.isAnonymous) {
-          anonymousHandler(reply.Question.User)
+          // 匿名發問
+          anonymousHandler(reply.Question.User.dataValues)
+        } else {
+          // 取得 account 欄位
+          getAccountHandler(reply.Question.User.dataValues)
         }
 
         // 時間格式
@@ -254,7 +270,7 @@ const userController = {
           ],
           include: {
             model: User,
-            attributes: ['id', 'name', 'role', 'avatar']
+            attributes: ['id', 'name', 'email', 'role', 'avatar']
           }
         },
         order: [['id', 'DESC']],
@@ -262,9 +278,12 @@ const userController = {
       })
 
       likes.forEach(like => {
-        // 匿名處理
         if (like.Question.isAnonymous) {
-          anonymousHandler(like.Question.User)
+          // 匿名處理
+          anonymousHandler(like.Question.User.dataValues)
+        } else {
+          // 取得 account 欄位
+          getAccountHandler(like.Question.User.dataValues)
         }
 
         // 時間格式
@@ -297,15 +316,16 @@ const userController = {
         include: {
           model: User,
           as: 'followers',
-          attributes: ['id', 'name', 'role', 'avatar']
+          attributes: ['id', 'name', 'email', 'role', 'avatar']
         },
         where: { followingId: userId }
       })
 
       // 改變回傳資料結構，方便前端串接
-      const followerData = followers.map(
-        follower => follower.followers.dataValues
-      )
+      const followerData = followers.map(follower => {
+        getAccountHandler(follower.followers.dataValues)
+        return follower.followers.dataValues
+      })
 
       return res.status(200).json(followerData)
     } catch (error) {
@@ -328,16 +348,17 @@ const userController = {
         include: {
           model: User,
           as: 'followings',
-          attributes: ['id', 'name', 'role', 'avatar']
+          attributes: ['id', 'name', 'email', 'role', 'avatar']
         },
         order: [['id', 'DESC']],
         where: { followerId: userId }
       })
 
       // 改變回傳資料結構，方便前端串接
-      const followingData = followings.map(
-        following => following.followings.dataValues
-      )
+      const followingData = followings.map(following => {
+        getAccountHandler(following.followings.dataValues)
+        return following.followings.dataValues
+      })
 
       return res.status(200).json(followingData)
     } catch (error) {
@@ -353,6 +374,7 @@ const userController = {
         attributes: [
           'id',
           'name',
+          'email',
           'role',
           'avatar',
           [
@@ -375,11 +397,12 @@ const userController = {
         where: { role: { [Op.ne]: 'admin' } }
       })
 
-      // 如果自己在名單上，刪除自己的 isFollowed 屬性
       users.forEach(user => {
+        // 如果自己在名單上，刪除自己的 isFollowed 屬性
         if (user.dataValues.id === currentUserId) {
           delete user.dataValues.isFollowed
         }
+        getAccountHandler(user.dataValues)
       })
 
       return res.status(200).json(users)
@@ -396,6 +419,7 @@ const userController = {
         attributes: [
           'id',
           'name',
+          'email',
           'role',
           'avatar',
           [
@@ -418,11 +442,12 @@ const userController = {
         where: { role: { [Op.ne]: 'admin' } }
       })
 
-      // 如果自己在名單上，刪除自己的 isFollowed 屬性
       users.forEach(user => {
+        // 如果自己在名單上，刪除自己的 isFollowed 屬性
         if (user.dataValues.id === currentUserId) {
           delete user.dataValues.isFollowed
         }
+        getAccountHandler(user.dataValues)
       })
 
       return res.status(200).json(users)
@@ -439,6 +464,7 @@ const userController = {
         attributes: [
           'id',
           'name',
+          'email',
           'role',
           'avatar',
           [
@@ -462,11 +488,12 @@ const userController = {
         where: { role: { [Op.ne]: 'admin' } }
       })
 
-      // 如果自己在名單上，刪除自己的 isFollowed 屬性
       users.forEach(user => {
+        // 如果自己在名單上，刪除自己的 isFollowed 屬性
         if (user.dataValues.id === currentUserId) {
           delete user.dataValues.isFollowed
         }
+        getAccountHandler(user.dataValues)
       })
 
       return res.status(200).json(users)
@@ -480,10 +507,14 @@ const userController = {
     try {
       const currentUserId = req.user.id
       const currentUser = await User.findByPk(currentUserId, {
-        attributes: ['id', 'name', 'introduction', 'avatar']
+        attributes: ['id', 'name', 'email', 'introduction', 'avatar']
       })
       if (!currentUser || currentUser.role === 'admin')
         return res.status(404).json({ status: 404, message: '使用者不存在' })
+
+      // 取得 account 欄位
+      getAccountHandler(currentUser.dataValues)
+
       return res.status(200).json({ status: 'success', currentUser })
     } catch (error) {
       next(error)
@@ -493,12 +524,18 @@ const userController = {
   putUser: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
-      const { name, introduction } = req.body
+      const { name, introduction, avatar } = req.body
       const { file } = req
       const updatedData = {
         name,
         introduction
       }
+
+      // 若刪除頭貼，還原預設頭貼
+      if (avatar === '') {
+        updatedData.avatar = 'https://imgur.com/NCBjuk5'
+      }
+
       if (file) updatedData.avatar = await imgurFileHandler(file)
       const user = await User.findByPk(currentUserId)
       user.update(updatedData)
@@ -534,7 +571,7 @@ const userController = {
 
       // 本站帳號才能修改信箱與密碼
       if (currentUser.isLocalAccount) {
-        const user = await User.findOne({ email })
+        const user = await User.findOne({ where: { email } })
         if (user) {
           return res
             .status(422)

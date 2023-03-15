@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken')
 const { User, Question, Reply, Like, Image, sequelize } = require('../models')
 const { Op } = require('sequelize')
 const { relativeTime } = require('../helpers/date-helper')
+const { getAccountHandler } = require('../helpers/user-data-helper')
 
 const adminController = {
   login: async (req, res, next) => {
@@ -57,17 +58,19 @@ const adminController = {
           ]
         ],
         include: [
-          { model: User, attributes: ['id', 'name', 'avatar'] },
+          { model: User, attributes: ['id', 'name', 'email', 'avatar'] },
           { model: Image, attributes: ['id', 'url'] }
         ],
         group: 'id', // 只取一張圖當預覽
         order: [['id', 'DESC']]
       })
 
-      // 時間格式
-      questions.forEach(
-        question => (question.createdAt = relativeTime(question.createdAt))
-      )
+      questions.forEach(question => {
+        // 時間格式
+        question.createdAt = relativeTime(question.createdAt)
+        // 取得 account 欄位
+        getAccountHandler(question.User)
+      })
 
       return res.status(200).json(questions)
     } catch (error) {
@@ -103,7 +106,7 @@ const adminController = {
         include: [
           {
             model: User,
-            attributes: ['id', 'name', 'avatar']
+            attributes: ['id', 'name', 'email', 'avatar']
           },
           {
             model: Image,
@@ -118,6 +121,9 @@ const adminController = {
       question.dataValues.createdAt = relativeTime(
         question.dataValues.createdAt
       )
+
+      // 取得 account 欄位
+      getAccountHandler(question.User.dataValues)
 
       return res.status(200).json(question)
     } catch (error) {
@@ -192,7 +198,7 @@ const adminController = {
         include: [
           {
             model: User,
-            attributes: ['id', 'name', 'avatar']
+            attributes: ['id', 'name', 'email', 'avatar']
           },
           {
             model: Image,
@@ -206,13 +212,12 @@ const adminController = {
         where: { questionId }
       })
 
-      // 時間格式
-      replies.forEach(
-        reply =>
-          (reply.dataValues.createdAt = relativeTime(
-            reply.dataValues.createdAt
-          ))
-      )
+      replies.forEach(reply => {
+        // 時間格式
+        reply.dataValues.createdAt = relativeTime(reply.dataValues.createdAt)
+        // 取得 account 欄位
+        getAccountHandler(reply.User.dataValues)
+      })
 
       return res.status(200).json(replies)
     } catch (error) {
@@ -255,6 +260,7 @@ const adminController = {
         attributes: [
           'id',
           'name',
+          'email',
           'role',
           'avatar',
           [
@@ -292,6 +298,10 @@ const adminController = {
         order: [['id', 'DESC']],
         where: { role: { [Op.ne]: 'admin' } }
       })
+
+      // 取得 account 欄位
+      users.forEach(user => getAccountHandler(user.dataValues))
+
       return res.status(200).json(users)
     } catch (error) {
       next(error)
