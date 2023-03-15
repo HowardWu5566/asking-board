@@ -11,7 +11,23 @@ const questionController = {
   getQuestions: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
-      const { grade, subject, keyword } = req.query // 搜尋功能
+
+      // 搜尋功能
+      const { grade, subject, keyword } = req.query
+      const where = {}
+      if (grade) {
+        where.grade = grade
+      }
+      if (subject) {
+        where.subject = subject
+      }
+      if (keyword) {
+        where[Op.or] = [
+          { title: { [Op.substring]: keyword } },
+          { description: { [Op.substring]: keyword } }
+        ]
+      }
+
       const questions = await Question.findAll({
         raw: true,
         nest: true,
@@ -53,14 +69,7 @@ const questionController = {
         ],
         group: 'id', // 只取一張圖當預覽
         order: [['id', 'DESC']],
-        where: {
-          grade,
-          subject,
-          [Op.or]: [
-            { title: { [Op.substring]: keyword } },
-            { description: { [Op.substring]: keyword } }
-          ]
-        }
+        where
       })
 
       questions.forEach(question => {
