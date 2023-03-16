@@ -81,6 +81,11 @@ const questionController = {
         }
         // 時間格式
         question.createdAt = relativeTime(question.createdAt)
+
+        // 若無圖片，填入預設圖
+        if (!question.Images.id) {
+          question.Images = { url: 'https://i.imgur.com/7YBozYb.png' }
+        }
       })
 
       return res.status(200).json(questions)

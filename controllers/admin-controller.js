@@ -70,6 +70,11 @@ const adminController = {
         question.createdAt = relativeTime(question.createdAt)
         // 取得 account 欄位
         getAccountHandler(question.User)
+
+        // 若無圖片，填入預設圖
+        if (!question.Images.id) {
+          question.Images = { url: 'https://i.imgur.com/7YBozYb.png' }
+        }
       })
 
       return res.status(200).json(questions)
