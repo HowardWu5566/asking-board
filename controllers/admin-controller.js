@@ -280,13 +280,23 @@ const adminController = {
             ),
             'replyCount'
           ],
+
+          // 問題收到讚數
           [
             sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id) + ' +
-                '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id)'
+              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id)  '
             ),
-            'likeCount'
+            'questionLikedCount'
           ],
+
+          // 回覆收到讚數
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id)'
+            ),
+            'replyLikedCount'
+          ],
+
           [
             sequelize.literal(
               '(SELECT COUNT(*) FROM Followships WHERE followingId = User.id)'
