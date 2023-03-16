@@ -16,7 +16,7 @@ const questionController = {
       const { grade, subject, keyword } = req.query
       const where = {}
       if (grade) {
-        where.grade = grade
+        where.grade = { [Op.substring]: grade }
       }
       if (subject) {
         where.subject = subject
