@@ -84,7 +84,7 @@ const questionController = {
 
         // 若無圖片，填入預設圖
         if (!question.Images.id) {
-          question.Images = { url: 'https://i.imgur.com/7YBozYb.png' }
+          question.Images = { url: '' }
         }
       })
 
