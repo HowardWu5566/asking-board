@@ -138,6 +138,7 @@ const questionController = {
       next(error)
     }
   },
+
   putQuestion: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
