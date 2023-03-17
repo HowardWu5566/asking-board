@@ -29,6 +29,7 @@ const adminController = {
       next(error)
     }
   },
+
   getQuestions: async (req, res, next) => {
     try {
       const questions = await Question.findAll({
@@ -66,6 +67,7 @@ const adminController = {
       next(error)
     }
   },
+
   getQuestion: async (req, res, next) => {
     try {
       const questionId = Number(req.params.id)
@@ -111,6 +113,7 @@ const adminController = {
       next(error)
     }
   },
+  
   deleteQuestion: async (req, res, next) => {
     try {
       const questionId = req.params.id
@@ -196,6 +199,7 @@ const adminController = {
         where: { questionId }
       })
       return res.status(200).json(replies)
+
     } catch (error) {
       next(error)
     }
@@ -266,6 +270,7 @@ const adminController = {
             ),
             'followingCount'
           ]
+
         ],
         where: { role: { [Op.or]: ['teacher', 'student'] } }
       })
