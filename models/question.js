@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
   Question.init(
     {
       userId: DataTypes.INTEGER,
+      title: DataTypes.STRING,
       description: DataTypes.STRING,
       isAnonymous: DataTypes.BOOLEAN,
       grade: DataTypes.STRING,

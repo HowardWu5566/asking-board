@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { User, Question, Reply, Like, Image, sequelize } = require('../models')
 const { Op } = require('sequelize')
+const { relativeTime } = require('../helpers/date-helper')
+const { getAccountHandler } = require('../helpers/user-data-helper')
 
 const adminController = {
   login: async (req, res, next) => {
@@ -18,18 +20,17 @@ const adminController = {
       if (!adminData || !isPasswordCorrect)
         return res
           .status(401)
-          .json({ status: 'error', message: 'email or password incorrect!' })
-      const admin = adminData.tojson()
+          .json({ status: 'error', message: 'email 或密碼錯誤' })
+      const admin = adminData.toJSON()
       delete admin.password
       const token = jwt.sign(admin, process.env.JWT_SECRET, {
         expiresIn: '30d'
       })
-      res.status(200).json({ token, admin })
+      return res.status(200).json({ status: 'success', token, admin })
     } catch (error) {
       next(error)
     }
   },
-
   getQuestions: async (req, res, next) => {
     try {
       const questions = await Question.findAll({
@@ -37,6 +38,7 @@ const adminController = {
         nest: true,
         attributes: [
           'id',
+          'title',
           'description',
           'isAnonymous',
           'grade',
@@ -56,25 +58,38 @@ const adminController = {
           ]
         ],
         include: [
-          { model: User, attributes: ['id', 'name', 'avatar'] },
+          { model: User, attributes: ['id', 'name', 'email', 'avatar'] },
           { model: Image, attributes: ['id', 'url'] }
         ],
         group: 'id', // 只取一張圖當預覽
-        order: ['id']
+        order: [['id', 'DESC']]
       })
+
+      questions.forEach(question => {
+        // 時間格式
+        question.createdAt = relativeTime(question.createdAt)
+        // 取得 account 欄位
+        getAccountHandler(question.User)
+
+        // 若無圖片，填入預設圖
+        if (!question.Images.id) {
+          question.Images = { url: 'https://i.imgur.com/7YBozYb.png' }
+        }
+      })
+
       return res.status(200).json(questions)
     } catch (error) {
       next(error)
     }
   },
-
-  getQuestion: async (req, res, next) => {
+  getquestion: async (req, res, next) => {
     try {
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId, {
         nest: true,
         attributes: [
           'id',
+          'title',
           'description',
           'isAnonymous',
           'grade',
@@ -96,7 +111,7 @@ const adminController = {
         include: [
           {
             model: User,
-            attributes: ['id', 'name', 'avatar']
+            attributes: ['id', 'name', 'email', 'avatar']
           },
           {
             model: Image,
@@ -105,15 +120,21 @@ const adminController = {
         ]
       })
       if (!question)
-        return res
-          .status(404)
-          .json({ status: 404, message: "question doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
+
+      // 時間格式
+      question.dataValues.createdAt = relativeTime(
+        question.dataValues.createdAt
+      )
+
+      // 取得 account 欄位
+      getAccountHandler(question.User.dataValues)
+
       return res.status(200).json(question)
     } catch (error) {
       next(error)
     }
   },
-  
   deleteQuestion: async (req, res, next) => {
     try {
       const questionId = req.params.id
@@ -121,21 +142,17 @@ const adminController = {
       if (!question)
         return res.status(404).json({
           status: 'error',
-          message: "question doesn't exist!"
+          message: '問題不存在'
         })
 
       // 刪除 question 時，同時刪除關聯的 replies, likes, images
       await sequelize.transaction(async deleteQuestion => {
-        const replies = await Reply.findAll({
-          raw: true,
-          where: { questionId }
-        })
+        const replies = await Reply.findAll({ where: { questionId } })
         const replyIds = replies.map(reply => reply.id)
         await Reply.destroy({
           where: { questionId },
           transaction: deleteQuestion
         })
-
         // 刪除 question 的 likes，及 replies 的 likes
         await Like.destroy({
           where: {
@@ -146,7 +163,6 @@ const adminController = {
           },
           transaction: deleteQuestion
         })
-
         // 刪除 question 的 images，及 replies 的 images
         await Image.destroy({
           where: {
@@ -159,6 +175,7 @@ const adminController = {
         })
         return await question.destroy({ transaction: deleteQuestion })
       })
+
       return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
@@ -169,9 +186,7 @@ const adminController = {
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId)
       if (!question)
-        return res
-          .status(404)
-          .json({ status: 'error', message: "question doesn't exist!" })
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
       const replies = await Reply.findAll({
         nest: true,
         attributes: [
@@ -188,18 +203,28 @@ const adminController = {
         include: [
           {
             model: User,
-            attributes: ['id', 'name', 'avatar']
+            attributes: ['id', 'name', 'email', 'avatar']
           },
           {
             model: Image,
             attributes: ['id', 'url']
           }
         ],
-        order: [['id', 'ASC']],
+        order: [
+          ['id', 'ASC'], // replies 排序
+          [Image, 'id', 'ASC'] // replies 內的 images 排序
+        ],
         where: { questionId }
       })
-      return res.status(200).json(replies)
 
+      replies.forEach(reply => {
+        // 時間格式
+        reply.dataValues.createdAt = relativeTime(reply.dataValues.createdAt)
+        // 取得 account 欄位
+        getAccountHandler(reply.User.dataValues)
+      })
+
+      return res.status(200).json(replies)
     } catch (error) {
       next(error)
     }
@@ -211,21 +236,24 @@ const adminController = {
       if (!reply)
         return res.status(404).json({
           status: 'error',
-          message: "reply doesn't exist!"
+          message: '回覆不存在'
         })
 
       // 刪除 reply 時，同時刪除關聯的 likes, images
       await sequelize.transaction(async deleteReply => {
+        // 刪除 reply 的 likes
         await Like.destroy({
           where: { object: 'reply', objectId: replyId },
           transaction: deleteReply
         })
+        // 刪除 reply 的 images
         await Image.destroy({
           where: { object: 'reply', objectId: replyId },
           transaction: deleteReply
         })
         return await reply.destroy({ transaction: deleteReply })
       })
+
       return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
@@ -237,6 +265,7 @@ const adminController = {
         attributes: [
           'id',
           'name',
+          'email',
           'role',
           'avatar',
           [
@@ -247,17 +276,27 @@ const adminController = {
           ],
           [
             sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Questions.userId = User.id)'
+              '(SELECT COUNT(*) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Replies.userId = User.id)'
             ),
             'replyCount'
           ],
+
+          // 問題收到讚數
           [
             sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id) + ' +
-                '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id)'
+              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id)  '
             ),
-            'likeCount'
+            'questionLikedCount'
           ],
+
+          // 回覆收到讚數
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id)'
+            ),
+            'replyLikedCount'
+          ],
+
           [
             sequelize.literal(
               '(SELECT COUNT(*) FROM Followships WHERE followingId = User.id)'
@@ -270,10 +309,14 @@ const adminController = {
             ),
             'followingCount'
           ]
-
         ],
-        where: { role: { [Op.or]: ['teacher', 'student'] } }
+        order: [['id', 'DESC']],
+        where: { role: { [Op.ne]: 'admin' } }
       })
+
+      // 取得 account 欄位
+      users.forEach(user => getAccountHandler(user.dataValues))
+
       return res.status(200).json(users)
     } catch (error) {
       next(error)

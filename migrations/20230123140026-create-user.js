@@ -14,6 +14,7 @@ module.exports = {
         type: Sequelize.STRING
       },
       email: {
+        unique: true,
         allowNull: false,
         type: Sequelize.STRING
       },
@@ -23,12 +24,13 @@ module.exports = {
       },
       role: {
         allowNull: false,
-        defaultValue: 'student',
+        defaultValue: '學生',
         type: Sequelize.STRING
       },
       avatar: {
         allowNull: false,
-        defaultValue: 'https://i.imgur.com/YOTISNv.jpg',
+        defaultValue: 'https://imgur.com/NCBjuk5',
+
         type: Sequelize.STRING
       },
       introduction: {

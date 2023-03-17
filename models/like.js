@@ -6,12 +6,10 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Like.belongsTo(models.User, { foreignKey: 'userId' })
       Like.belongsTo(models.Question, {
-        foreignKey: 'objectId',
-        constraints: false
+        foreignKey: 'objectId'
       })
       Like.belongsTo(models.Reply, {
-        foreignKey: 'objectId',
-        constraints: false
+        foreignKey: 'objectId'
       })
     }
   }

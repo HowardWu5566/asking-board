@@ -26,7 +26,7 @@ module.exports = {
       raw: true,
       nest: true,
       where: {
-        role: 'student',
+        role: '學生',
         name: {
           [Sequelize.Op.like]: 'seed-student%'
         }
@@ -39,7 +39,8 @@ module.exports = {
         { length: QUESTIONS_PER_STUDENT * STUDENTS_AMOUNT },
         (_, index) => ({
           UserId: userIdArr[Math.floor(index / QUESTIONS_PER_STUDENT)].id,
-          description: 'seed-question:' + faker.lorem.sentences(2),
+          title: 'seed-question ' + (index + 1),
+          description: 'seed-question: ' + faker.lorem.sentences(2),
           isAnonymous: Math.random() > 0.8,
           grade: grade[Math.floor(Math.random() * grade.length)],
           subject: subject[Math.floor(Math.random() * subject.length)],

@@ -1,5 +1,4 @@
 const { Followship, User, sequelize } = require('../models')
-const { Op } = require('sequelize')
 
 const followshipController = {
   followOthers: async (req, res, next) => {
@@ -9,12 +8,12 @@ const followshipController = {
       if (userId === followingId)
         return res
           .status(422)
-          .json({ status: 'error', message: "You can't follow yourself!" })
+          .json({ status: 'error', message: '不可追蹤自己' })
       const user = await User.findByPk(followingId)
       if (!user || user.role === 'admin')
         return res
           .status(404)
-          .json({ status: 'error', message: "user doesn't exist!" })
+          .json({ status: 'error', message: '使用者不存在' })
       const followship = await Followship.findOrCreate({
         where: {
           followingId,
@@ -25,7 +24,7 @@ const followshipController = {
       if (!followship[1])
         return res
           .status(422)
-          .json({ status: 'error', message: 'You have followed the user!' })
+          .json({ status: 'error', message: '已追蹤此使用者' })
       res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
@@ -47,44 +46,13 @@ const followshipController = {
       if (!user || user.role === 'admin')
         return res
           .status(404)
-          .json({ status: 'error', message: "user doesn't exist!" })
+          .json({ status: 'error', message: '使用者不存在' })
       if (!followship)
         return res
           .status(422)
-          .json({ status: 'error', message: "You haven't followed the user!" })
+          .json({ status: 'error', message: '尚未追蹤此使用者' })
       await followship.destroy()
       res.status(200).json({ status: 'success' })
-    } catch (error) {
-      next(error)
-    }
-  },
-  getMostFollowerUser: async (req, res, next) => {
-    try {
-      const currentUserId = req.user.id
-      const users = await User.findAll({
-        raw: true,
-        nest: true,
-        attributes: [
-          'id',
-          'name',
-          'avatar',
-          'role',
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Followships WHERE followingId = User.id)'
-            ),
-            'followerCount'
-          ]
-        ],
-        order: [[sequelize.literal('followerCount'), 'DESC']],
-        where: {
-          role: { [Op.not]: 'admin' },
-          id: { [Op.not]: currentUserId }
-        },
-        limit: 10
-      })
-      console.log(users)
-      return res.status(200).json(users)
     } catch (error) {
       next(error)
     }

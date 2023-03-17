@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const auth = require('./modules/auth')
 const user = require('./modules/user')
 const question = require('./modules/question')
 const reply = require('./modules/reply')
@@ -12,11 +13,13 @@ const {
   authenticatedUser,
   authenticatedAdmin
 } = require('../middleware/auth')
+const { signUpValidator, validate } = require('../middleware/validate')
 
-router.post('/api/v1/signup', userController.signUp)
+router.post('/api/v1/users', signUpValidator, validate, userController.signUp)
 router.post('/api/v1/users/login', userController.login)
 router.post('/api/v1/admin/login', adminController.login)
 
+router.use('/api/v1/auth', auth)
 router.use('/api/v1/users', authenticated, authenticatedUser, user)
 router.use('/api/v1/questions', authenticated, authenticatedUser, question)
 router.use('/api/v1/replies', authenticated, authenticatedUser, reply)
