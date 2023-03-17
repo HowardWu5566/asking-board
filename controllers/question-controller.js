@@ -1,4 +1,5 @@
-const { User, Question, Reply, Like, sequelize } = require('../models')
+const { User, Question, Reply, Like, Image, sequelize } = require('../models')
+const { Op } = require('sequelize')
 
 const questionController = {
   getQuestions: async (req, res, next) => {
@@ -35,13 +36,25 @@ const questionController = {
             'isLiked'
           ]
         ],
-        include: {
-          model: User,
-          attributes: ['id', 'name', 'avatar']
-        },
+        include: [
+          { model: User, attributes: ['id', 'name', 'avatar'] },
+          { model: Image, attributes: ['id', 'url'] }
+        ],
+        group: 'id', // 只取一張圖當預覽
         order: [['id', 'DESC']]
       })
-      return res.status(200).json({ questions })
+
+      // 匿名處理
+      questions.forEach(question => {
+        if (question.isAnonymous) {
+          question.User = {
+            name: '匿名',
+            avatar: 'https://i.imgur.com/YOTISNv.jpg'
+          }
+        }
+      })
+
+      return res.status(200).json(questions)
     } catch (error) {
       next(error)
     }
@@ -49,13 +62,12 @@ const questionController = {
   getQuestion: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
-      const question = await Question.findByPk(req.params.id, {
-        raw: true,
+      const questionId = Number(req.params.id)
+      const question = await Question.findByPk(questionId, {
         nest: true,
         attributes: [
           'id',
           'description',
-          'image',
           'isAnonymous',
           'grade',
           'subject',
@@ -81,15 +93,30 @@ const questionController = {
             'isLiked'
           ]
         ],
-        include: {
-          model: User,
-          attributes: ['id', 'name', 'avatar']
-        }
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'avatar']
+          },
+          {
+            model: Image,
+            attributes: ['id', 'url']
+          }
+        ]
       })
       if (!question)
         return res
           .status(404)
           .json({ status: 404, message: "question doesn't exist!" })
+
+      // 匿名處理
+      if (question.isAnonymous) {
+        question.User = {
+          name: '匿名',
+          avatar: 'https://i.imgur.com/YOTISNv.jpg'
+        }
+      }
+
       return res.status(200).json(question)
     } catch (error) {
       next(error)
@@ -111,17 +138,93 @@ const questionController = {
       next(error)
     }
   },
+
+  putQuestion: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const { description, isAnonymous, grade, subject } = req.body
+      const questionId = Number(req.params.id)
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res
+          .status(404)
+          .json({ status: 'error', message: "question doesn't exist!" })
+      if (question.userId !== currentUserId)
+        return res
+          .status(401)
+          .json({ status: 'error', message: 'unauthorized!' })
+      const updatedQuestion = {
+        description,
+        isAnonymous,
+        grade,
+        subject
+      }
+      await question.update(updatedQuestion)
+      return res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
+  },
+  deleteQuestion: async (req, res, next) => {
+    try {
+      const currentuserId = req.user.id
+      const questionId = req.params.id
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res
+          .status(404)
+          .json({ status: 404, message: "question doesn't exist!" })
+      if (question.userId !== currentuserId)
+        return res
+          .status(401)
+          .json({ status: 'error', message: 'unauthorized!' })
+
+      // 刪除 question 時，同時刪除關聯的 replies, likes, images
+      await sequelize.transaction(async deleteQuestion => {
+        const replies = await Reply.findAll({ where: { questionId } })
+        const replyIds = replies.map(reply => reply.id)
+        console.log(replyIds)
+        await Reply.destroy({
+          where: { questionId },
+          transaction: deleteQuestion
+        })
+        // 刪除 question 的 likes，及 replies 的 likes
+        await Like.destroy({
+          where: {
+            [Op.or]: [
+              { object: 'question', objectId: questionId },
+              { object: 'reply', objectId: { [Op.in]: replyIds } }
+            ]
+          },
+          transaction: deleteQuestion
+        })
+        // 刪除 question 的 images，及 replies 的 images
+        await Image.destroy({
+          where: {
+            [Op.or]: [
+              { object: 'question', objectId: questionId },
+              { object: 'reply', objectId: { [Op.in]: replyIds } }
+            ]
+          },
+          transaction: deleteQuestion
+        })
+        return await question.destroy({ transaction: deleteQuestion })
+      })
+      return res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
+  },
   getReplies: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
-      const questionId = req.params.id
+      const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId)
       if (!question)
         return res
           .status(404)
           .json({ status: 'error', message: "question doesn't exist!" })
       const replies = await Reply.findAll({
-        raw: true,
         nest: true,
         attributes: [
           'id',
@@ -142,14 +245,20 @@ const questionController = {
             'isLiked'
           ]
         ],
-        include: {
-          model: User,
-          attributes: ['id', 'name', 'avatar']
-        },
-        order: [['createdAt', 'DESC']],
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'avatar']
+          },
+          {
+            model: Image,
+            attributes: ['id', 'url']
+          }
+        ],
+        order: [['id', 'ASC']],
         where: { questionId }
       })
-      return res.json({ replies })
+      return res.status(200).json(replies)
     } catch (error) {
       next(error)
     }

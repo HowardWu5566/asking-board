@@ -17,6 +17,8 @@ module.exports = {
         password: bcrypt.hashSync(DEFAULT_PASSWORD, bcrypt.genSaltSync(10)),
         role: 'admin',
         avatar: 'https://loremflickr.com/320/240/man,woman/?lock=0',
+        introduction: '我是網站管理員',
+        isLocalAccount: true,
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -26,6 +28,8 @@ module.exports = {
         password: bcrypt.hashSync(DEFAULT_PASSWORD, bcrypt.genSaltSync(10)),
         role: 'teacher',
         avatar: `https://loremflickr.com/320/240/man,woman/?lock=${index + 1}`,
+        introduction: '我是個老師，是種子資料',
+        isLocalAccount: true,
         createdAt: new Date(),
         updatedAt: new Date()
       })),
@@ -37,6 +41,8 @@ module.exports = {
         avatar: `https://loremflickr.com/320/240/man,woman/?lock=${
           index + TEACHERS_AMOUNT + 1
         }`,
+        introduction: '我是個學生，是種子資料',
+        isLocalAccount: true,
         createdAt: new Date(),
         updatedAt: new Date()
       }))
