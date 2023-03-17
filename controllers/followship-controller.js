@@ -57,6 +57,37 @@ const followshipController = {
     } catch (error) {
       next(error)
     }
+  },
+  getMostFollowerUser: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const users = await User.findAll({
+        raw: true,
+        nest: true,
+        attributes: [
+          'id',
+          'name',
+          'avatar',
+          'role',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM Followships WHERE followingId = User.id)'
+            ),
+            'followerCount'
+          ]
+        ],
+        order: [[sequelize.literal('followerCount'), 'DESC']],
+        where: {
+          role: { [Op.not]: 'admin' },
+          id: { [Op.not]: currentUserId }
+        },
+        limit: 10
+      })
+      console.log(users)
+      return res.status(200).json(users)
+    } catch (error) {
+      next(error)
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { User, Question, Reply, Image, sequelize } = require('../models')
+const { User, Question, Reply, Like, Image, sequelize } = require('../models')
+const { Op } = require('sequelize')
 
 const adminController = {
   login: async (req, res, next) => {
@@ -28,7 +29,8 @@ const adminController = {
       next(error)
     }
   },
-  getquestions: async (req, res, next) => {
+
+  getQuestions: async (req, res, next) => {
     try {
       const questions = await Question.findAll({
         raw: true,
@@ -65,6 +67,53 @@ const adminController = {
       next(error)
     }
   },
+
+  getQuestion: async (req, res, next) => {
+    try {
+      const questionId = Number(req.params.id)
+      const question = await Question.findByPk(questionId, {
+        nest: true,
+        attributes: [
+          'id',
+          'description',
+          'isAnonymous',
+          'grade',
+          'subject',
+          'createdAt',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Replies WHERE Replies.questionId = Question.id)'
+            ),
+            'replyCount'
+          ],
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
+            ),
+            'likeCount'
+          ]
+        ],
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'avatar']
+          },
+          {
+            model: Image,
+            attributes: ['id', 'url']
+          }
+        ]
+      })
+      if (!question)
+        return res
+          .status(404)
+          .json({ status: 404, message: "question doesn't exist!" })
+      return res.status(200).json(question)
+    } catch (error) {
+      next(error)
+    }
+  },
+  
   deleteQuestion: async (req, res, next) => {
     try {
       const questionId = req.params.id
@@ -74,23 +123,110 @@ const adminController = {
           status: 'error',
           message: "question doesn't exist!"
         })
-      await question.destroy()
-      res.status(200).json({ status: 'success' })
+
+      // 刪除 question 時，同時刪除關聯的 replies, likes, images
+      await sequelize.transaction(async deleteQuestion => {
+        const replies = await Reply.findAll({
+          raw: true,
+          where: { questionId }
+        })
+        const replyIds = replies.map(reply => reply.id)
+        await Reply.destroy({
+          where: { questionId },
+          transaction: deleteQuestion
+        })
+
+        // 刪除 question 的 likes，及 replies 的 likes
+        await Like.destroy({
+          where: {
+            [Op.or]: [
+              { object: 'question', objectId: questionId },
+              { object: 'reply', objectId: { [Op.in]: replyIds } }
+            ]
+          },
+          transaction: deleteQuestion
+        })
+
+        // 刪除 question 的 images，及 replies 的 images
+        await Image.destroy({
+          where: {
+            [Op.or]: [
+              { object: 'question', objectId: questionId },
+              { object: 'reply', objectId: { [Op.in]: replyIds } }
+            ]
+          },
+          transaction: deleteQuestion
+        })
+        return await question.destroy({ transaction: deleteQuestion })
+      })
+      return res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
+  },
+  getReplies: async (req, res, next) => {
+    try {
+      const questionId = Number(req.params.id)
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res
+          .status(404)
+          .json({ status: 'error', message: "question doesn't exist!" })
+      const replies = await Reply.findAll({
+        nest: true,
+        attributes: [
+          'id',
+          'comment',
+          'createdAt',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "reply" AND Likes.objectId = Reply.id)'
+            ),
+            'likeCount'
+          ]
+        ],
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'avatar']
+          },
+          {
+            model: Image,
+            attributes: ['id', 'url']
+          }
+        ],
+        order: [['id', 'ASC']],
+        where: { questionId }
+      })
+      return res.status(200).json(replies)
+
     } catch (error) {
       next(error)
     }
   },
   deleteReply: async (req, res, next) => {
     try {
-      const replyId = req.params.id
+      const replyId = Number(req.params.id)
       const reply = await Reply.findByPk(replyId)
       if (!reply)
         return res.status(404).json({
           status: 'error',
           message: "reply doesn't exist!"
         })
-      await reply.destroy()
-      res.status(200).json({ status: 'success' })
+
+      // 刪除 reply 時，同時刪除關聯的 likes, images
+      await sequelize.transaction(async deleteReply => {
+        await Like.destroy({
+          where: { object: 'reply', objectId: replyId },
+          transaction: deleteReply
+        })
+        await Image.destroy({
+          where: { object: 'reply', objectId: replyId },
+          transaction: deleteReply
+        })
+        return await reply.destroy({ transaction: deleteReply })
+      })
+      return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
     }
@@ -134,7 +270,9 @@ const adminController = {
             ),
             'followingCount'
           ]
-        ]
+
+        ],
+        where: { role: { [Op.or]: ['teacher', 'student'] } }
       })
       return res.status(200).json(users)
     } catch (error) {

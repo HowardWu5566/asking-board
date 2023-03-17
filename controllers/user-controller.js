@@ -16,20 +16,21 @@ const userController = {
   // 註冊
   signUp: async (req, res, next) => {
     try {
-      const { name, email, password, confirmPassword } = req.body
-      const messages = {}
+      const { name, email, password, confirmPassword, role } = req.body
+      const messages = []
       const userEmail = await User.findOne({ where: { email } })
-      if (!name.trim()) messages.name = 'please enter name'
-      if (userEmail) messages.email = 'email has been registered'
-      if (!email.trim()) messages.email = 'please enter email'
+      if (userEmail) messages.push({ msg: 'email已重複註冊！' })
+      if (!name.trim()) messages.push({ msg: '名稱不可空白！' })
+      if (!email.trim()) messages.push({ msg: '名稱不可空白！' })
       if (password !== confirmPassword)
-        messages.password = "password doesn't match"
-      if (Object.keys(messages).length !== 0) {
+        messages.push({ msg: '密碼與確認密碼不符！' })
+      if (messages.length) {
         return res.status(422).json({
           status: 'error',
           messages,
           name,
-          email
+          email,
+          role
         })
       }
 
@@ -37,7 +38,8 @@ const userController = {
       const newUser = await User.create({
         name,
         email,
-        password: bcrypt.hashSync(password, 10)
+        password: bcrypt.hashSync(password, 10),
+        role
       })
 
       // 刪除敏感資訊、傳回客戶端
