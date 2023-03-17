@@ -31,7 +31,7 @@ const adminController = {
       next(error)
     }
   },
-  getquestions: async (req, res, next) => {
+  getQuestions: async (req, res, next) => {
     try {
       const questions = await Question.findAll({
         raw: true,
@@ -231,7 +231,7 @@ const adminController = {
   },
   deleteReply: async (req, res, next) => {
     try {
-      const replyId = req.params.id
+      const replyId = Number(req.params.id)
       const reply = await Reply.findByPk(replyId)
       if (!reply)
         return res.status(404).json({
