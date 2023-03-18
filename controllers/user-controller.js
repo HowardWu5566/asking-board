@@ -578,13 +578,16 @@ const userController = {
 
       // 本站帳號才能修改信箱與密碼
       if (currentUser.isLocalAccount) {
-        const user = await User.findOne({ where: { email } })
-        if (user) {
-          return res
-            .status(422)
-            .json({ status: 'error', message: 'email 已重複註冊' })
-        } else if (email !== currentUser.email) {
-          updatedData.email = email
+        if (email !== currentUser.email) {
+          // 信箱不能與其他使用者重複
+          const user = await User.findOne({ where: { email } })
+          if (user) {
+            return res
+              .status(422)
+              .json({ status: 'error', message: 'email 已重複註冊' })
+          } else {
+            updatedData.email = email
+          }
         }
 
         // 舊密碼驗證
