@@ -382,6 +382,7 @@ const userController = {
           'id',
           'name',
           'email',
+          'introduction',
           'role',
           'avatar',
           [
@@ -427,6 +428,7 @@ const userController = {
           'id',
           'name',
           'email',
+          'introduction',
           'role',
           'avatar',
           [
@@ -472,6 +474,7 @@ const userController = {
           'id',
           'name',
           'email',
+          'introduction',
           'role',
           'avatar',
           [
