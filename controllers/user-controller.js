@@ -26,7 +26,7 @@ const userController = {
       if (userEmail)
         return res.status(422).json({
           status: 'error',
-          message: 'email 已註冊',
+          message: { email: 'email 已註冊' },
           name,
           email,
           role
@@ -575,7 +575,6 @@ const userController = {
 
       const currentUser = await User.findByPk(currentUserId)
       const updatedData = {}
-
       // 本站帳號才能修改信箱與密碼
       if (currentUser.isLocalAccount) {
         if (email !== currentUser.email) {
@@ -584,7 +583,7 @@ const userController = {
           if (user) {
             return res
               .status(422)
-              .json({ status: 'error', message: 'email 已重複註冊' })
+              .json({ status: 'error', message: { email: 'email 已重複註冊' } })
           } else {
             updatedData.email = email
           }
@@ -599,7 +598,7 @@ const userController = {
           if (!isPasswordCorrect) {
             return res
               .status(401)
-              .json({ status: 'error', message: '密碼錯誤' })
+              .json({ status: 'error', message: { password: '密碼錯誤' } })
           } else {
             updatedData.password = await bcrypt.hashSync(newPassword, 10)
           }
