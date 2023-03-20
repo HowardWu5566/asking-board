@@ -6,6 +6,8 @@ const {
   anonymousHandler,
   getAccountHandler
 } = require('../helpers/user-data-helper')
+const POPULAR_QUESTION_COUNT = 10
+const POPULAR_QUESTION_TIME_FRAME = 30
 
 const questionController = {
   getQuestions: async (req, res, next) => {
@@ -156,6 +158,85 @@ const questionController = {
       )
 
       return res.status(200).json(question)
+    } catch (error) {
+      next(error)
+    }
+  },
+  getPopularQuestions: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - POPULAR_QUESTION_TIME_FRAME)
+      const questions = await Question.findAll({
+        raw: true,
+        nest: true,
+        attributes: [
+          'id',
+          'title',
+          'description',
+          'isAnonymous',
+          'grade',
+          'subject',
+          'createdAt',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Replies WHERE Replies.questionId = Question.id)'
+            ),
+            'replyCount'
+          ],
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
+            ),
+            'likeCount'
+          ],
+          [
+            sequelize.literal(
+              `EXISTS (SELECT id FROM Likes WHERE Likes.userId = ${sequelize.escape(
+                currentUserId
+              )} AND Likes.object = "question" AND Likes.objectId = Question.id)`
+            ),
+            'isLiked'
+          ]
+        ],
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'email', 'avatar', 'role']
+          },
+          { model: Image, attributes: ['id', 'url'] }
+        ],
+        group: 'id', // 只取一張圖當預覽
+        order: [
+          ['replyCount', 'DESC'],
+          ['id', 'DESC']
+        ],
+        limit: POPULAR_QUESTION_COUNT,
+        where: {
+          createdAt: {
+            [Op.gte]: startDate
+          }
+        },
+        subQuery: false
+      })
+
+      questions.forEach(question => {
+        // 匿名處理
+        if (question.isAnonymous) {
+          anonymousHandler(question.User)
+        } else {
+          getAccountHandler(question.User)
+        }
+        // 時間格式
+        question.createdAt = relativeTime(question.createdAt)
+
+        // 若無圖片，填入預設圖
+        if (!question.Images.id) {
+          question.Images = { url: '' }
+        }
+      })
+
+      return res.status(200).json(questions)
     } catch (error) {
       next(error)
     }

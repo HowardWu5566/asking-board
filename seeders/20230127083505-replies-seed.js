@@ -3,7 +3,7 @@
 const faker = require('faker')
 const {
   TEACHER_REPLIES_PER_QUESTION,
-  STUDENT_REPLIES_PER_QUESTION
+  MAX_STUDENT_REPLIES_AMOUNT
 } = require('../helpers/seeders-amount')
 const { User, Question } = require('../models')
 
@@ -55,14 +55,17 @@ module.exports = {
         }))
       )
       replies.push(
-        ...Array.from({ length: STUDENT_REPLIES_PER_QUESTION }, () => ({
-          UserId:
-            studentIdArr[Math.floor(Math.random() * studentIdArr.length)].id,
-          QuestionId: question.id,
-          comment: 'seed-reply:' + faker.lorem.sentences(2),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }))
+        ...Array.from(
+          { length: Math.floor(Math.random() * MAX_STUDENT_REPLIES_AMOUNT) },
+          () => ({
+            UserId:
+              studentIdArr[Math.floor(Math.random() * studentIdArr.length)].id,
+            QuestionId: question.id,
+            comment: 'seed-reply:' + faker.lorem.sentences(2),
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+        )
       )
     })
     await queryInterface.bulkInsert('Replies', replies)

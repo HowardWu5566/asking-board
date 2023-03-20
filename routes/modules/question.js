@@ -8,6 +8,7 @@ const {
 } = require('../../middleware/validate')
 
 router.get('/', questionController.getQuestions)
+router.get('/popular', questionController.getPopularQuestions)
 router.post(
   '/',
   upload.array('images', 5),
