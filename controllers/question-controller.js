@@ -165,8 +165,20 @@ const questionController = {
   getPopularQuestions: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
+      const { grade } = req.query
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - POPULAR_QUESTION_TIME_FRAME)
+
+      // 篩選條件
+      const where = {
+        createdAt: {
+          [Op.gte]: startDate
+        }
+      }
+      if (grade) {
+        where.grade = { [Op.substring]: grade }
+      }
+      
       const questions = await Question.findAll({
         raw: true,
         nest: true,
@@ -212,11 +224,7 @@ const questionController = {
           ['id', 'DESC']
         ],
         limit: POPULAR_QUESTION_COUNT,
-        where: {
-          createdAt: {
-            [Op.gte]: startDate
-          }
-        },
+        where,
         subQuery: false
       })
 
