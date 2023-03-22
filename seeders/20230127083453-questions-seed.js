@@ -2,10 +2,7 @@
 
 const faker = require('faker')
 const { User } = require('../models')
-const {
-  STUDENTS_AMOUNT,
-  QUESTIONS_PER_STUDENT
-} = require('../helpers/seeders-amount')
+const { STUDENTS_AMOUNT, QUESTIONS_PER_STUDENT } = process.env
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -36,9 +33,12 @@ module.exports = {
     await queryInterface.bulkInsert(
       'Questions',
       Array.from(
-        { length: QUESTIONS_PER_STUDENT * STUDENTS_AMOUNT },
+        {
+          length: Number(QUESTIONS_PER_STUDENT) * Number(STUDENTS_AMOUNT)
+        },
         (_, index) => ({
-          UserId: userIdArr[Math.floor(index / QUESTIONS_PER_STUDENT)].id,
+          UserId:
+            userIdArr[Math.floor(index / Number(QUESTIONS_PER_STUDENT))].id,
           title: 'seed-question ' + (index + 1),
           description: 'seed-question: ' + faker.lorem.sentences(2),
           isAnonymous: Math.random() > 0.8,

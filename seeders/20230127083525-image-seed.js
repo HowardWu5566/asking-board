@@ -1,9 +1,6 @@
 'use strict'
 const { Question, Reply } = require('../models')
-const {
-  IMAGES_IN_QUESTIONS,
-  IMAGES_IN_REPLIES
-} = require('../helpers/seeders-amount')
+const { IMAGES_IN_QUESTIONS, IMAGES_IN_REPLIES } = process.env
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -25,7 +22,7 @@ module.exports = {
       attibutes: ['id']
     })
     await queryInterface.bulkInsert('Images', [
-      ...Array.from({ length: IMAGES_IN_QUESTIONS }, (_, index) => ({
+      ...Array.from({ length: Number(IMAGES_IN_QUESTIONS) }, (_, index) => ({
         object: 'question',
         objectId:
           questionIdArr[Math.floor(Math.random() * questionIdArr.length)].id,
@@ -34,11 +31,11 @@ module.exports = {
         createdAt: new Date(),
         updatedAt: new Date()
       })),
-      ...Array.from({ length: IMAGES_IN_REPLIES }, (_, index) => ({
+      ...Array.from({ length: Number(IMAGES_IN_REPLIES) }, (_, index) => ({
         object: 'reply',
         objectId: replyIdArr[Math.floor(Math.random() * replyIdArr.length)].id,
         url: `https://loremflickr.com/320/240?lock=${
-          index + IMAGES_IN_QUESTIONS
+          index + Number(IMAGES_IN_QUESTIONS)
         }`,
         isSeed: true,
         createdAt: new Date(),

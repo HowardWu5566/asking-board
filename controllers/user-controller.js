@@ -11,7 +11,8 @@ const {
 const { Op } = require('sequelize')
 const { imgurFileHandler } = require('../helpers/file-helper')
 const { relativeTime } = require('../helpers/date-helper')
-const ACTIVE_USER_COUNT = 10
+
+const { ACTIVE_USER_AMOUNT } = process.env
 const {
   anonymousHandler,
   getAccountHandler
@@ -401,7 +402,7 @@ const userController = {
           ]
         ],
         order: [['replyCount', 'DESC']],
-        limit: ACTIVE_USER_COUNT,
+        limit: Number(ACTIVE_USER_AMOUNT),
         where: { role: { [Op.ne]: 'admin' } }
       })
 
@@ -447,7 +448,7 @@ const userController = {
           ]
         ],
         order: [['followerCount', 'DESC']],
-        limit: ACTIVE_USER_COUNT,
+        limit: Number(ACTIVE_USER_AMOUNT),
         where: { role: { [Op.ne]: 'admin' } }
       })
 
@@ -494,7 +495,7 @@ const userController = {
           ]
         ],
         order: [['likedCount', 'DESC']],
-        limit: ACTIVE_USER_COUNT,
+        limit: Number(ACTIVE_USER_AMOUNT),
         where: { role: { [Op.ne]: 'admin' } }
       })
 

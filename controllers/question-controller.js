@@ -6,9 +6,7 @@ const {
   anonymousHandler,
   getAccountHandler
 } = require('../helpers/user-data-helper')
-const POPULAR_QUESTION_COUNT = 10
-const POPULAR_QUESTION_TIME_FRAME = 30
-
+const { POPULAR_QUESTION_AMOUNT, POPULAR_QUESTION_DAY_RANGE } = process.env
 const questionController = {
   getQuestions: async (req, res, next) => {
     try {
@@ -167,7 +165,9 @@ const questionController = {
       const currentUserId = req.user.id
       const { grade } = req.query
       const startDate = new Date()
-      startDate.setDate(startDate.getDate() - POPULAR_QUESTION_TIME_FRAME)
+      startDate.setDate(
+        startDate.getDate() - Number(POPULAR_QUESTION_DAY_RANGE)
+      )
 
       // 篩選條件
       const where = {
@@ -178,7 +178,7 @@ const questionController = {
       if (grade) {
         where.grade = { [Op.substring]: grade }
       }
-      
+
       const questions = await Question.findAll({
         raw: true,
         nest: true,
@@ -223,7 +223,7 @@ const questionController = {
           ['replyCount', 'DESC'],
           ['id', 'DESC']
         ],
-        limit: POPULAR_QUESTION_COUNT,
+        limit: Number(POPULAR_QUESTION_AMOUNT),
         where,
         subQuery: false
       })

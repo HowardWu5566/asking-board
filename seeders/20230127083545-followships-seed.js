@@ -1,7 +1,7 @@
 'use strict'
 
-const { FOLLOWSHIP_AMOUNT } = require('../helpers/seeders-amount')
 const { User } = require('../models')
+const { FOLLOWSHIP_AMOUNT } = process.env
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -27,11 +27,11 @@ module.exports = {
         followships.join('、').includes(`${followerId},${followingId}`)
       )
       followships.push([followerId, followingId])
-    } while (followships.length < FOLLOWSHIP_AMOUNT)
+    } while (followships.length < Number(FOLLOWSHIP_AMOUNT))
 
     await queryInterface.bulkInsert(
       'Followships',
-      Array.from({ length: FOLLOWSHIP_AMOUNT }, (_, index) => ({
+      Array.from({ length: Number(FOLLOWSHIP_AMOUNT) }, (_, index) => ({
         followerId: followships[index][0],
         followingId: followships[index][1],
         isSeed: true,

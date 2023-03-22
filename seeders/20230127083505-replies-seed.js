@@ -1,11 +1,8 @@
 'use strict'
 
 const faker = require('faker')
-const {
-  TEACHER_REPLIES_PER_QUESTION,
-  MAX_STUDENT_REPLIES_AMOUNT
-} = require('../helpers/seeders-amount')
 const { User, Question } = require('../models')
+const { TEACHER_REPLIES_PER_QUESTION, MAX_STUDENT_REPLIES_AMOUNT } = process.env
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -45,7 +42,7 @@ module.exports = {
     })
     questionIdArr.forEach((question, index) => {
       replies.push(
-        ...Array.from({ length: TEACHER_REPLIES_PER_QUESTION }, () => ({
+        ...Array.from({ length: Number(TEACHER_REPLIES_PER_QUESTION) }, () => ({
           UserId:
             teacherIdArr[Math.floor(Math.random() * teacherIdArr.length)].id,
           QuestionId: question.id,
@@ -56,7 +53,11 @@ module.exports = {
       )
       replies.push(
         ...Array.from(
-          { length: Math.floor(Math.random() * MAX_STUDENT_REPLIES_AMOUNT) },
+          {
+            length: Math.floor(
+              Math.random() * Number(MAX_STUDENT_REPLIES_AMOUNT)
+            )
+          },
           () => ({
             UserId:
               studentIdArr[Math.floor(Math.random() * studentIdArr.length)].id,
