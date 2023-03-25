@@ -44,7 +44,7 @@ const replyController = {
         })
 
         // 修改後新增圖片
-        if (files.length) {
+        if (files) {
           for (const file of files) {
             await Image.create(
               {

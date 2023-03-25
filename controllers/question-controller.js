@@ -266,7 +266,7 @@ const questionController = {
       })
 
       // 若有圖片，寫入 Images 資料表
-      if (files.length) {
+      if (files) {
         for (const file of files) {
           await Image.create({
             object: 'question',
@@ -327,7 +327,7 @@ const questionController = {
         })
 
         // 修改後新增圖片
-        if (files.length) {
+        if (files) {
           for (const file of files) {
             await Image.create(
               {
@@ -468,7 +468,7 @@ const questionController = {
       })
 
       // 若有圖片，寫入 Images 資料表
-      if (files.length) {
+      if (files) {
         for (const file of files) {
           await Image.create({
             object: 'reply',
