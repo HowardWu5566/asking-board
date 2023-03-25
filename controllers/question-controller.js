@@ -432,7 +432,7 @@ const questionController = {
           }
         ],
         order: [
-          ['id', 'ASC'], // replies 排序
+          ['id', 'DESC'], // replies 排序
           [Image, 'id', 'ASC'] // replies 內的 images 排序
         ],
         where: { questionId }
