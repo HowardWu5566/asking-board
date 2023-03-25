@@ -46,7 +46,9 @@ const userController = {
       delete newUser.dataValues.password
       delete newUser.dataValues.createdAt
       delete newUser.dataValues.updatedAt
-      return res.json({ status: 'success', user: newUser.dataValues })
+      return res
+        .status(200)
+        .json({ status: 'success', user: newUser.dataValues })
     } catch (error) {
       next(error)
     }
@@ -144,7 +146,9 @@ const userController = {
         ]
       })
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       // 取得 account 欄位
       getAccountHandler(user.dataValues)
@@ -163,7 +167,9 @@ const userController = {
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       const questions = await Question.findAll({
         attributes: [
@@ -200,7 +206,9 @@ const userController = {
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       const replies = await Reply.findAll({
         attributes: ['id', 'questionId', 'comment', 'createdAt'],
@@ -261,7 +269,9 @@ const userController = {
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       const likes = await Like.findAll({
         attributes: ['id', 'object', 'objectId'],
@@ -317,7 +327,9 @@ const userController = {
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       const followers = await Followship.findAll({
         attributes: [],
@@ -349,7 +361,9 @@ const userController = {
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       const followings = await Followship.findAll({
         attributes: [],
@@ -521,7 +535,9 @@ const userController = {
         attributes: ['id', 'name', 'email', 'introduction', 'avatar']
       })
       if (!currentUser || currentUser.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       // 取得 account 欄位
       getAccountHandler(currentUser.dataValues)
@@ -564,7 +580,9 @@ const userController = {
         attributes: ['id', 'role', 'email', 'isLocalAccount']
       })
       if (!currentUser || currentUser.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
       return res.status(200).json({ status: 'success', currentUser })
     } catch (error) {
       next(error)

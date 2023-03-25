@@ -70,7 +70,7 @@ const replyController = {
       const replyId = req.params.id
       const reply = await Reply.findByPk(replyId)
       if (!reply)
-        return res.status(404).json({ status: 404, message: '回覆不存在' })
+        return res.status(404).json({ status: 'error', message: '回覆不存在' })
       if (reply.userId !== currentUserId)
         return res.status(401).json({ status: 'error', message: '無權限' })
 
@@ -113,7 +113,7 @@ const replyController = {
         return res
           .status(422)
           .json({ status: 'error', message: '已點讚此回覆' })
-      return res.status(422).json({ status: 'success' })
+      return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
     }
