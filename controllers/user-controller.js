@@ -104,28 +104,21 @@ const userController = {
             'questionCount'
           ],
 
-          // 回覆數
+          // 回覆問題數
           [
             sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Replies.userId = User.id)'
+              '(SELECT COUNT(DISTINCT Replies.questionId) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Replies.userId = User.id)'
             ),
             'replyCount'
           ],
 
-          // 問題收到讚數
+          // 收藏問題數
           [
             sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id)  '
+              `(SELECT COUNT(*) FROM Likes WHERE Likes.object = "question" AND Likes.userId = User.id
+              )`
             ),
-            'questionLikedCount'
-          ],
-
-          // 回覆收到讚數
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id)'
-            ),
-            'replyLikedCount'
+            'likeQuestionCount'
           ],
 
           // 多少人追蹤他
