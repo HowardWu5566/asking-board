@@ -174,17 +174,23 @@ const userController = {
           'subject',
           'createdAt'
         ],
+        include: {
+          model: User,
+          attributes: ['id', 'name', 'email', 'role', 'avatar']
+        },
         order: [['id', 'DESC']],
         where: { userId, isAnonymous: false } // 不顯示匿名發問
       })
 
-      // 調整時間格式
-      questions.forEach(
-        question =>
-          (question.dataValues.createdAt = relativeTime(
-            question.dataValues.createdAt
-          ))
-      )
+      questions.forEach(question => {
+        //取得 account 欄位
+        getAccountHandler(question.User.dataValues)
+
+        // 調整時間格式
+        question.dataValues.createdAt = relativeTime(
+          question.dataValues.createdAt
+        )
+      })
 
       return res.status(200).json(questions)
     } catch (error) {
