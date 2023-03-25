@@ -2,7 +2,7 @@ module.exports = {
   anonymousHandler: user => {
     user.name = '匿名'
     user.account = 'anonymous'
-    user.avatar = 'https://imgur.com/NCBjuk5'
+    user.avatar = 'https://i.imgur.com/a5KIQyC.png'
     delete user.email
     return user
   },

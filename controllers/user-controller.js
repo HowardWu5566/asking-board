@@ -560,7 +560,7 @@ const userController = {
 
       // 若刪除頭貼，還原預設頭貼
       if (avatar === '') {
-        updatedData.avatar = 'https://imgur.com/NCBjuk5'
+        updatedData.avatar = 'https://i.imgur.com/a5KIQyC.png'
       }
 
       if (file) updatedData.avatar = await imgurFileHandler(file)
