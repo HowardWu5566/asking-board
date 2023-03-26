@@ -389,7 +389,7 @@ const userController = {
               sequelize.literal(
                 `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
                   currentUserId
-                )} AND Followships.followingId =${sequelize.escape(userId)})`
+                )} AND Followships.followingId = followers.id)`
               ),
               'isFollowed'
             ]
@@ -445,7 +445,7 @@ const userController = {
               sequelize.literal(
                 `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
                   currentUserId
-                )} AND Followships.followingId =${sequelize.escape(userId)})`
+                )} AND Followships.followingId = followings.id)`
               ),
               'isFollowed'
             ]
