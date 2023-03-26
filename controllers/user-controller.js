@@ -363,6 +363,7 @@ const userController = {
   // 查看誰追蹤他
   getUserFollowers: async (req, res, next) => {
     try {
+      const currentUserId = req.user.id
       const userId = Number(req.params.id)
 
       // 確認使用者存在
@@ -377,13 +378,34 @@ const userController = {
         include: {
           model: User,
           as: 'followers',
-          attributes: ['id', 'name', 'email', 'role', 'avatar']
+          attributes: [
+            'id',
+            'name',
+            'email',
+            'role',
+            'avatar',
+            'introduction',
+            [
+              sequelize.literal(
+                `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
+                  currentUserId
+                )} AND Followships.followingId =${sequelize.escape(userId)})`
+              ),
+              'isFollowed'
+            ]
+          ]
         },
         where: { followingId: userId }
       })
 
       // 改變回傳資料結構，方便前端串接
       const followerData = followers.map(follower => {
+        // 如果自己在名單上，刪除自己的 isFollowed 屬性
+        if (follower.followers.dataValues.id === currentUserId) {
+          delete follower.followers.dataValues.isFollowed
+        }
+
+        // 取得account 欄位
         getAccountHandler(follower.followers.dataValues)
         return follower.followers.dataValues
       })
@@ -397,6 +419,7 @@ const userController = {
   // 查看他追蹤誰
   getUserFollowings: async (req, res, next) => {
     try {
+      const currentUserId = req.user.id
       const userId = Number(req.params.id)
 
       // 確認使用者存在
@@ -411,7 +434,22 @@ const userController = {
         include: {
           model: User,
           as: 'followings',
-          attributes: ['id', 'name', 'email', 'role', 'avatar']
+          attributes: [
+            'id',
+            'name',
+            'email',
+            'role',
+            'avatar',
+            'introduction',
+            [
+              sequelize.literal(
+                `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
+                  currentUserId
+                )} AND Followships.followingId =${sequelize.escape(userId)})`
+              ),
+              'isFollowed'
+            ]
+          ]
         },
         order: [['id', 'DESC']],
         where: { followerId: userId }
@@ -419,6 +457,12 @@ const userController = {
 
       // 改變回傳資料結構，方便前端串接
       const followingData = followings.map(following => {
+        // 如果自己在名單上，刪除自己的 isFollowed 屬性
+        if (following.followings.dataValues.id === currentUserId) {
+          delete following.followings.dataValues.isFollowed
+        }
+
+        // 取得 account 欄位
         getAccountHandler(following.followings.dataValues)
         return following.followings.dataValues
       })
