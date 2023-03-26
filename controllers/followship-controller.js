@@ -4,7 +4,7 @@ const followshipController = {
   followOthers: async (req, res, next) => {
     try {
       const userId = req.user.id
-      const followingId = Number(req.body.id)
+      const followingId = Number(req.params.id)
       if (userId === followingId)
         return res
           .status(422)
