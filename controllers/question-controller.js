@@ -496,9 +496,6 @@ const questionController = {
           userId,
           object: 'question',
           objectId: questionId
-        },
-        defaults: {
-          isSeed: false
         }
       })
       if (!like[1])
