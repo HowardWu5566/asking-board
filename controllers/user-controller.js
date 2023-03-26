@@ -99,7 +99,7 @@ const userController = {
           // 發問數
           [
             sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions WHERE userId = User.id)'
+              '(SELECT COUNT(*) FROM Questions WHERE userId = User.id AND isAnonymous = false)'
             ),
             'questionCount'
           ],
@@ -172,7 +172,21 @@ const userController = {
           'description',
           'grade',
           'subject',
-          'createdAt'
+          'createdAt',
+          [
+            sequelize.literal(
+              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
+            ),
+            'likeCount'
+          ],
+          [
+            sequelize.literal(
+              `EXISTS (SELECT id FROM Likes WHERE Likes.userId = ${sequelize.escape(
+                userId
+              )} AND Likes.object = "question" AND Likes.objectId = Question.id)`
+            ),
+            'isLiked'
+          ]
         ],
         include: {
           model: User,
@@ -220,7 +234,21 @@ const userController = {
             'isAnonymous',
             'grade',
             'subject',
-            'createdAt'
+            'createdAt',
+            [
+              sequelize.literal(
+                '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
+              ),
+              'likeCount'
+            ],
+            [
+              sequelize.literal(
+                `EXISTS (SELECT id FROM Likes WHERE Likes.userId = ${sequelize.escape(
+                  userId
+                )} AND Likes.object = "question" AND Likes.objectId = Question.id)`
+              ),
+              'isLiked'
+            ]
           ],
           include: {
             model: User,
@@ -283,7 +311,21 @@ const userController = {
             'isAnonymous',
             'grade',
             'subject',
-            'createdAt'
+            'createdAt',
+            [
+              sequelize.literal(
+                '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
+              ),
+              'likeCount'
+            ],
+            [
+              sequelize.literal(
+                `EXISTS (SELECT id FROM Likes WHERE Likes.userId = ${sequelize.escape(
+                  userId
+                )} AND Likes.object = "question" AND Likes.objectId = Question.id)`
+              ),
+              'isLiked'
+            ]
           ],
           include: {
             model: User,
