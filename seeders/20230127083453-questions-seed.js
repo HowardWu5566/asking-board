@@ -44,6 +44,10 @@ module.exports = {
           isAnonymous: Math.random() > 0.8,
           grade: grade[Math.floor(Math.random() * grade.length)],
           subject: subject[Math.floor(Math.random() * subject.length)],
+          image:
+            Math.random() > 0.5
+              ? `https://loremflickr.com/320/240/dog?lock=${index}`
+              : null,
           createdAt: new Date(),
           updatedAt: new Date()
         })

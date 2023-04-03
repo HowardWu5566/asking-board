@@ -11,7 +11,7 @@ router.get('/', questionController.getQuestions)
 router.get('/popular', questionController.getPopularQuestions)
 router.post(
   '/',
-  upload.array('images', 5),
+  upload.single('image'),
   questionValidator,
   validate,
   questionController.postQuestion
@@ -19,7 +19,7 @@ router.post(
 router.get('/:id', questionController.getQuestion)
 router.put(
   '/:id',
-  upload.array('images', 5),
+  upload.single('image'),
   questionValidator,
   validate,
   questionController.putQuestion
@@ -28,7 +28,7 @@ router.delete('/:id', questionController.deleteQuestion)
 router.get('/:id/replies', questionController.getReplies)
 router.post(
   '/:id/replies',
-  upload.array('images', 5),
+  upload.single('image'),
   replyValidator,
   validate,
   questionController.postReply

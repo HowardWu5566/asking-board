@@ -38,6 +38,7 @@ const questionController = {
           'isAnonymous',
           'grade',
           'subject',
+          'image',
           'createdAt',
           [
             sequelize.literal(
@@ -64,10 +65,8 @@ const questionController = {
           {
             model: User,
             attributes: ['id', 'name', 'email', 'avatar', 'role']
-          },
-          { model: Image, attributes: ['id', 'url'] }
+          }
         ],
-        group: 'id', // 只取一張圖當預覽
         order: [['id', 'DESC']],
         where
       })
@@ -81,11 +80,6 @@ const questionController = {
         }
         // 時間格式
         question.createdAt = relativeTime(question.createdAt)
-
-        // 若無圖片，填入預設圖
-        if (!question.Images.id) {
-          question.Images = { url: '' }
-        }
       })
 
       return res.status(200).json(questions)
@@ -106,6 +100,7 @@ const questionController = {
           'isAnonymous',
           'grade',
           'subject',
+          'image',
           'createdAt',
           [
             sequelize.literal(
@@ -132,10 +127,6 @@ const questionController = {
           {
             model: User,
             attributes: ['id', 'name', 'email', 'avatar', 'role']
-          },
-          {
-            model: Image,
-            attributes: ['id', 'url']
           }
         ]
       })
@@ -189,6 +180,7 @@ const questionController = {
           'isAnonymous',
           'grade',
           'subject',
+          'image',
           'createdAt',
           [
             sequelize.literal(
@@ -215,17 +207,14 @@ const questionController = {
           {
             model: User,
             attributes: ['id', 'name', 'email', 'avatar', 'role']
-          },
-          { model: Image, attributes: ['id', 'url'] }
+          }
         ],
-        group: 'id', // 只取一張圖當預覽
         order: [
           ['replyCount', 'DESC'],
           ['id', 'DESC']
         ],
         limit: Number(POPULAR_QUESTION_AMOUNT),
-        where,
-        subQuery: false
+        where
       })
 
       questions.forEach(question => {
@@ -237,11 +226,6 @@ const questionController = {
         }
         // 時間格式
         question.createdAt = relativeTime(question.createdAt)
-
-        // 若無圖片，填入預設圖
-        if (!question.Images.id) {
-          question.Images = { url: '' }
-        }
       })
 
       return res.status(200).json(questions)
@@ -252,30 +236,19 @@ const questionController = {
   postQuestion: async (req, res, next) => {
     try {
       const { title, description, isAnonymous, grade, subject } = req.body
-      const { files } = req
+      const { file } = req
       const userId = req.user.id
 
       // 寫入 Questions 資料表
-      const question = await Question.create({
+      await Question.create({
         userId,
         title,
         description: description.trim(),
         isAnonymous,
         grade,
-        subject
+        subject,
+        image: file ? await imgurFileHandler(file) : null
       })
-
-      // 若有圖片，寫入 Images 資料表
-      if (files) {
-        for (const file of files) {
-          await Image.create({
-            object: 'question',
-            objectId: question.dataValues.id,
-            url: await imgurFileHandler(file),
-            isSeed: false
-          })
-        }
-      }
 
       return res.status(200).json({ status: 'success' })
     } catch (error) {
@@ -285,9 +258,9 @@ const questionController = {
   putQuestion: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
-      const { title, description, isAnonymous, grade, subject, images } =
+      const { title, description, isAnonymous, grade, subject, image } =
         req.body
-      const { files } = req
+      const { file } = req
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId)
       if (!question)
@@ -295,51 +268,14 @@ const questionController = {
       if (question.userId !== currentUserId)
         return res.status(401).json({ status: 'error', message: '無權限' })
 
-      await sequelize.transaction(async putQuestion => {
-        // 修改問題
-        await question.update(
-          {
-            title,
-            description,
-            isAnonymous,
-            grade,
-            subject
-          },
-          { transaction: putQuestion }
-        )
-        const existedImgs = await Image.findAll({
-          raw: true,
-          nest: true,
-          attributes: ['id'],
-          where: { object: 'question', objectId: questionId },
-          transaction: putQuestion
-        })
-        const deletedImgIds = existedImgs
-          .filter(item => !images?.includes(item.id.toString()))
-          .map(item => item.id)
-
-        // 修改後移除圖片
-        await Image.destroy({
-          where: {
-            id: { [Op.in]: deletedImgIds }
-          },
-          transaction: putQuestion
-        })
-
-        // 修改後新增圖片
-        if (files) {
-          for (const file of files) {
-            await Image.create(
-              {
-                object: 'question',
-                objectId: question.dataValues.id,
-                url: await imgurFileHandler(file),
-                isSeed: false
-              },
-              { transaction: putQuestion }
-            )
-          }
-        }
+      // 修改問題
+      await question.update({
+        title,
+        description,
+        isAnonymous,
+        grade,
+        subject,
+        image: file ? await imgurFileHandler(file) : image ? image : null
       })
 
       return res.status(200).json({ status: 'success' })
@@ -361,23 +297,12 @@ const questionController = {
       await sequelize.transaction(async deleteQuestion => {
         const replies = await Reply.findAll({ where: { questionId } })
         const replyIds = replies.map(reply => reply.id)
-        console.log(replyIds)
         await Reply.destroy({
           where: { questionId },
           transaction: deleteQuestion
         })
         // 刪除 question 的 likes，及 replies 的 likes
         await Like.destroy({
-          where: {
-            [Op.or]: [
-              { object: 'question', objectId: questionId },
-              { object: 'reply', objectId: { [Op.in]: replyIds } }
-            ]
-          },
-          transaction: deleteQuestion
-        })
-        // 刪除 question 的 images，及 replies 的 images
-        await Image.destroy({
           where: {
             [Op.or]: [
               { object: 'question', objectId: questionId },
@@ -405,6 +330,7 @@ const questionController = {
         attributes: [
           'id',
           'comment',
+          'image',
           'createdAt',
           [
             sequelize.literal(
@@ -425,15 +351,10 @@ const questionController = {
           {
             model: User,
             attributes: ['id', 'name', 'email', 'avatar', 'role']
-          },
-          {
-            model: Image,
-            attributes: ['id', 'url']
           }
         ],
         order: [
-          ['id', 'DESC'], // replies 排序
-          [Image, 'id', 'ASC'] // replies 內的 images 排序
+          ['id', 'DESC'] // replies 排序
         ],
         where: { questionId }
       })
@@ -454,30 +375,19 @@ const questionController = {
     try {
       const userId = req.user.id
       const { comment } = req.body
-      const { files } = req
+      const { file } = req
       const questionId = req.params.id
       const question = await Question.findByPk(questionId)
       if (!question)
         return res.status(404).json({ status: 'error', message: '問題不存在' })
 
       // 寫入 Replies 資料表
-      const reply = await Reply.create({
+      await Reply.create({
         userId,
         questionId,
-        comment
+        comment,
+        image: file ? await imgurFileHandler(file) : null
       })
-
-      // 若有圖片，寫入 Images 資料表
-      if (files) {
-        for (const file of files) {
-          await Image.create({
-            object: 'reply',
-            objectId: reply.dataValues.id,
-            url: await imgurFileHandler(file),
-            isSeed: false
-          })
-        }
-      }
 
       return res.status(200).json({ status: 'success' })
     } catch (error) {
