@@ -28,7 +28,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: '/api/v1/auth/google/callback'
+      callbackURL: process.env.CALLBACK_URL
     },
     async function (accessToken, refreshToken, profile, done) {
       let user = await User.findOne({
@@ -44,6 +44,10 @@ passport.use(
           avatar: profile.photos[0].value
         })
       const userData = user.toJSON()
+      delete userData.password // 刪除機敏資料
+      delete userData.createdAt
+      delete userData.updatedAt
+
       const token = jwt.sign(userData, process.env.JWT_SECRET, {
         expiresIn: '30d'
       })
