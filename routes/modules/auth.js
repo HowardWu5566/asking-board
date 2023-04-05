@@ -13,7 +13,7 @@ router.get(
   '/google/callback',
   passport.authenticate('google', {
     session: false,
-    failureRedirect: 'http://localhost:3000/'
+    failureRedirect: process.env.LOGIN_PAGE
   }),
   function (req, res) {
     return res
