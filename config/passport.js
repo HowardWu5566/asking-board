@@ -32,7 +32,7 @@ passport.use(
     },
     async function (accessToken, refreshToken, profile, done) {
       let user = await User.findOne({
-        attributes: ['id', 'name', 'email', 'role', 'avatar'],
+        attributes: ['id', 'name', 'email', 'role', 'avatar', 'isLocalAccount'],
         where: { email: profile.emails[0].value, isLocalAccount: false }
       })
       if (!user)
@@ -41,7 +41,8 @@ passport.use(
           email: profile.emails[0].value,
           password: bcrypt.hashSync(Math.random().toString(36).slice(-8), 10),
           role: '學生',
-          avatar: profile.photos[0].value
+          avatar: profile.photos[0].value,
+          isLocalAccount: false
         })
       const userData = user.toJSON()
       delete userData.password // 刪除機敏資料

@@ -16,9 +16,10 @@ router.get(
     failureRedirect: process.env.LOGIN_PAGE
   }),
   function (req, res) {
-    return res
-      .status(200)
-      .json({ status: 'success', token: req.user[1], user: req.user[0] })
+    return res.redirect(
+      process.env.LOGIN_PAGE +
+        `?token=${req.user[1]}&user=${JSON.stringify(req.user[0])}`
+    )
   }
 )
 
