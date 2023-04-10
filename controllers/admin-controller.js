@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { User, Question, Reply, Like, Image, sequelize } = require('../models')
+const { User, Question, Reply, Like, sequelize } = require('../models')
 const { Op } = require('sequelize')
 const { relativeTime } = require('../helpers/date-helper')
 const { getAccountHandler } = require('../helpers/user-data-helper')
@@ -43,6 +43,7 @@ const adminController = {
           'isAnonymous',
           'grade',
           'subject',
+          'image',
           'createdAt',
           [
             sequelize.literal(
@@ -58,10 +59,11 @@ const adminController = {
           ]
         ],
         include: [
-          { model: User, attributes: ['id', 'name', 'email', 'avatar'] },
-          { model: Image, attributes: ['id', 'url'] }
+          {
+            model: User,
+            attributes: ['id', 'name', 'email', 'avatar', 'role']
+          }
         ],
-        group: 'id', // 只取一張圖當預覽
         order: [['id', 'DESC']]
       })
 
@@ -72,8 +74,8 @@ const adminController = {
         getAccountHandler(question.User)
 
         // 若無圖片，填入預設圖
-        if (!question.Images.id) {
-          question.Images = { url: 'https://i.imgur.com/7YBozYb.png' }
+        if (!question.image) {
+          question.image = 'https://i.imgur.com/7YBozYb.png'
         }
       })
 
@@ -94,6 +96,7 @@ const adminController = {
           'isAnonymous',
           'grade',
           'subject',
+          'image',
           'createdAt',
           [
             sequelize.literal(
@@ -111,11 +114,7 @@ const adminController = {
         include: [
           {
             model: User,
-            attributes: ['id', 'name', 'email', 'avatar']
-          },
-          {
-            model: Image,
-            attributes: ['id', 'url']
+            attributes: ['id', 'name', 'email', 'avatar', 'role']
           }
         ]
       })
@@ -145,7 +144,7 @@ const adminController = {
           message: '問題不存在'
         })
 
-      // 刪除 question 時，同時刪除關聯的 replies, likes, images
+      // 刪除 question 時，同時刪除關聯的 replies, likes
       await sequelize.transaction(async deleteQuestion => {
         const replies = await Reply.findAll({ where: { questionId } })
         const replyIds = replies.map(reply => reply.id)
@@ -155,16 +154,6 @@ const adminController = {
         })
         // 刪除 question 的 likes，及 replies 的 likes
         await Like.destroy({
-          where: {
-            [Op.or]: [
-              { object: 'question', objectId: questionId },
-              { object: 'reply', objectId: { [Op.in]: replyIds } }
-            ]
-          },
-          transaction: deleteQuestion
-        })
-        // 刪除 question 的 images，及 replies 的 images
-        await Image.destroy({
           where: {
             [Op.or]: [
               { object: 'question', objectId: questionId },
@@ -192,6 +181,7 @@ const adminController = {
         attributes: [
           'id',
           'comment',
+          'image',
           'createdAt',
           [
             sequelize.literal(
@@ -204,15 +194,10 @@ const adminController = {
           {
             model: User,
             attributes: ['id', 'name', 'email', 'avatar']
-          },
-          {
-            model: Image,
-            attributes: ['id', 'url']
           }
         ],
         order: [
-          ['id', 'ASC'], // replies 排序
-          [Image, 'id', 'ASC'] // replies 內的 images 排序
+          ['id', 'DESC'] // replies 排序
         ],
         where: { questionId }
       })
@@ -239,15 +224,9 @@ const adminController = {
           message: '回覆不存在'
         })
 
-      // 刪除 reply 時，同時刪除關聯的 likes, images
+      // 刪除 reply 時，同時刪除關聯的 likes
       await sequelize.transaction(async deleteReply => {
-        // 刪除 reply 的 likes
         await Like.destroy({
-          where: { object: 'reply', objectId: replyId },
-          transaction: deleteReply
-        })
-        // 刪除 reply 的 images
-        await Image.destroy({
           where: { object: 'reply', objectId: replyId },
           transaction: deleteReply
         })
