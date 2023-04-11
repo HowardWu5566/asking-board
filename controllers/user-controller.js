@@ -292,10 +292,6 @@ const userController = {
         reply.dataValues.createdAt = relativeTime(reply.createdAt)
         reply.Question.dataValues.createdAt = relativeTime(reply.Question.createdAt)
 
-        // 問題過長
-        reply.Question.description =
-          reply.Question.description.slice(0, 20) + '...'
-
         // 刪除不必要資料
         delete reply.Question.dataValues.isAnonymous
       })
