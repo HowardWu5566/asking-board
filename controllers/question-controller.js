@@ -357,6 +357,19 @@ const questionController = {
         })
         return await question.destroy({ transaction: deleteQuestion })
       })
+
+      // 若有圖片，寫入 Images 資料表
+      if (files.length) {
+        for (const file of files) {
+          await Image.create({
+            object: 'reply',
+            objectId: reply.dataValues.id,
+            url: await imgurFileHandler(file),
+            isSeed: false
+          })
+        }
+      }
+
       return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)

@@ -247,7 +247,7 @@ const adminController = {
   // 刪除特定回覆
   deleteReply: async (req, res, next) => {
     try {
-      const replyId = req.params.id
+      const replyId = Number(req.params.id)
       const reply = await Reply.findByPk(replyId)
       if (!reply)
         return res.status(404).json({
