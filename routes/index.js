@@ -8,11 +8,7 @@ const admin = require('./modules/admin')
 const userController = require('../controllers/user-controller')
 const adminController = require('../controllers/admin-controller')
 const { undefinedRoute } = require('../middleware/error-handler')
-const {
-  authenticated,
-  authenticatedUser,
-  authenticatedAdmin
-} = require('../middleware/auth')
+const { authenticated, authenticatedUser, authenticatedAdmin } = require('../middleware/auth')
 const { signUpValidator, validate } = require('../middleware/validate')
 
 router.post('/users', signUpValidator, validate, userController.signUp)

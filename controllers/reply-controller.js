@@ -1,7 +1,8 @@
-const { Reply, Like, Image, sequelize } = require('../models')
+const { Reply, Like, sequelize } = require('../models')
 const { imgurFileHandler } = require('../helpers/file-helper')
 
 const replyController = {
+  // 修改回覆
   putReply: async (req, res, next) => {
     try {
       const userId = req.user.id
@@ -20,6 +21,7 @@ const replyController = {
         questionId: reply.questionId,
         comment: comment.trim(),
         image: file ? await imgurFileHandler(file) : image ? image : null
+          // 判斷換圖片、未變更或刪除圖片
       })
 
       return res.status(200).json({ status: 'success' })
@@ -27,6 +29,8 @@ const replyController = {
       next(error)
     }
   },
+
+  // 刪除回覆
   deleteReply: async (req, res, next) => {
     try {
       const currentUserId = Number(req.user.id)
@@ -51,6 +55,8 @@ const replyController = {
       next(error)
     }
   },
+
+  // 對回覆按讚
   postReplyLike: async (req, res, next) => {
     try {
       const userId = req.user.id
@@ -75,6 +81,8 @@ const replyController = {
       next(error)
     }
   },
+
+  // 對回覆收回讚
   deleteReplyLike: async (req, res, next) => {
     try {
       const userId = req.user.id

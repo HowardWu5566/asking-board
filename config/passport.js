@@ -49,7 +49,7 @@ passport.use(
       delete userData.createdAt
       delete userData.updatedAt
 
-      const token = jwt.sign(userData, process.env.JWT_SECRET, {
+      const token = jwt.sign(userData, process.env.JWT_SECRET, { // 簽發 JWT
         expiresIn: '30d'
       })
       return done(null, [userData, token])

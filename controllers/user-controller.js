@@ -1,25 +1,14 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const {
-  User,
-  Question,
-  Reply,
-  Like,
-  Followship,
-  sequelize
-} = require('../models')
+const { User, Question, Reply, Like, Followship, sequelize } = require('../models')
 const { Op } = require('sequelize')
 const { imgurFileHandler } = require('../helpers/file-helper')
 const { relativeTime } = require('../helpers/date-helper')
-
 const { ACTIVE_USER_AMOUNT } = process.env
-const {
-  anonymousHandler,
-  getAccountHandler
-} = require('../helpers/user-data-helper')
+const { anonymousHandler, getAccountHandler } = require('../helpers/user-data-helper')
 
 const userController = {
-  // 註冊
+  // 註冊帳號
   signUp: async (req, res, next) => {
     try {
       const { name, email, password, role } = req.body
@@ -54,7 +43,7 @@ const userController = {
     }
   },
 
-  // 登入
+  // 使用者登入
   login: async (req, res, next) => {
     try {
       // 檢查信箱及密碼
@@ -83,7 +72,7 @@ const userController = {
     }
   },
 
-  // 查看使用者
+  // 查看特定使用者
   getUser: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
@@ -96,58 +85,63 @@ const userController = {
           'role',
           'avatar',
           'introduction',
-
-          // 是否追蹤
-          [
-            sequelize.literal(
-              `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
-                currentUserId
-              )} AND Followships.followingId = User.id)`
-            ),
+          [ // 登入者是否追蹤
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Followships 
+                WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                  AND Followships.followingId = User.id
+              )
+            `),
             'isFollowed'
           ],
-          // 發問數
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions WHERE userId = User.id AND isAnonymous = false)'
-            ),
+          [ // 發問數
+            sequelize.literal(`(
+              SELECT COUNT (id) FROM Questions 
+              WHERE userId = User.id 
+                AND isAnonymous = false
+            )`),
             'questionCount'
           ],
-
-          // 回覆問題數
-          [
-            sequelize.literal(
-              '(SELECT COUNT(DISTINCT Replies.questionId) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Replies.userId = User.id)'
-            ),
+          [ // 回覆問題數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (DISTINCT Replies.questionId) 
+                FROM Questions 
+                JOIN Replies 
+                  ON Questions.id = Replies.questionId 
+                WHERE Replies.userId = User.id
+            )`),
             'replyCount'
           ],
-
-          // 收藏問題數
-          [
-            sequelize.literal(
-              `(SELECT COUNT(*) FROM Likes WHERE Likes.object = "question" AND Likes.userId = User.id
-              )`
-            ),
+          [ // 收藏問題數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Likes 
+                WHERE Likes.object = "question" 
+                  AND Likes.userId = User.id
+            )`),
             'likeQuestionCount'
           ],
-
-          // 多少人追蹤他
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Followships WHERE followingId = User.id)'
-            ),
+          [ // 多少人追蹤他
+           sequelize.literal(`(
+              SELECT 
+                COUNT(id) FROM Followships 
+                WHERE followingId = User.id
+            )`),
             'followerCount'
           ],
-
-          // 他追蹤多少人
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Followships WHERE followerId = User.id)'
-            ),
+          [ // 他追蹤多少人
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Followships 
+                WHERE followerId = User.id
+            )`),
             'followingCount'
           ]
         ]
       })
+
       if (!user || user.role === 'admin')
         return res
           .status(404)
@@ -184,10 +178,13 @@ const userController = {
           'grade',
           'subject',
           'createdAt',
-          [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
-            ),
+          [ // 收藏數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Likes 
+                WHERE Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+            )`),
             'likeCount'
           ],
           [ // 登入者是否收藏
@@ -251,10 +248,13 @@ const userController = {
             'grade',
             'subject',
             'createdAt',
-            [
-              sequelize.literal(
-                '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
-              ),
+            [ // 收藏數
+              sequelize.literal(`(
+                SELECT 
+                  COUNT (id) FROM Likes 
+                  WHERE Likes.object = "question" 
+                    AND Likes.objectId = Question.id
+              )`),
               'likeCount'
             ],
             [ // 登入者是否收藏
@@ -289,9 +289,7 @@ const userController = {
 
         // 時間格式
         reply.dataValues.createdAt = relativeTime(reply.createdAt)
-        reply.Question.dataValues.createdAt = relativeTime(
-          reply.Question.createdAt
-        )
+        reply.Question.dataValues.createdAt = relativeTime(reply.Question.createdAt)
 
         // 問題過長
         reply.Question.description =
@@ -332,10 +330,13 @@ const userController = {
             'grade',
             'subject',
             'createdAt',
-            [
-              sequelize.literal(
-                '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
-              ),
+            [ // 收藏數
+              sequelize.literal(`(
+                SELECT 
+                  COUNT (id) FROM Likes 
+                  WHERE Likes.object = "question" 
+                    AND Likes.objectId = Question.id
+              )`),
               'likeCount'
             ],
             [ // 登入者是否收藏
@@ -408,12 +409,14 @@ const userController = {
             'role',
             'avatar',
             'introduction',
-            [
-              sequelize.literal(
-                `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
-                  currentUserId
-                )} AND Followships.followingId = followers.id)`
-              ),
+            [ // 登入者是否追蹤
+              sequelize.literal(`
+                EXISTS (
+                  SELECT id FROM Followships 
+                  WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                    AND Followships.followingId = followers.id
+                )
+              `),
               'isFollowed'
             ]
           ]
@@ -464,12 +467,14 @@ const userController = {
             'role',
             'avatar',
             'introduction',
-            [
-              sequelize.literal(
-                `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
-                  currentUserId
-                )} AND Followships.followingId = followings.id)`
-              ),
+            [ // 登入者是否追蹤
+              sequelize.literal(`
+                EXISTS (
+                  SELECT id FROM Followships 
+                  WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                    AND Followships.followingId = followings.id
+                )
+              `),
               'isFollowed'
             ]
           ]
@@ -508,18 +513,22 @@ const userController = {
           'introduction',
           'role',
           'avatar',
-          [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Replies WHERE Replies.userId = User.id)'
-            ),
+          [ // 回覆數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Replies 
+                WHERE Replies.userId = User.id
+            )`),
             'replyCount'
           ],
-          [
-            sequelize.literal(
-              `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
-                currentUserId
-              )} AND Followships.followingId = User.id)`
-            ),
+          [ // 登入者是否追蹤
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Followships 
+                WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                  AND Followships.followingId = User.id
+              )
+            `),
             'isFollowed'
           ]
         ],
@@ -554,18 +563,22 @@ const userController = {
           'introduction',
           'role',
           'avatar',
-          [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Followships WHERE followingId = User.id)'
-            ),
+          [ // 追蹤數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Followships 
+                WHERE followingId = User.id
+            )`),
             'followerCount'
           ],
-          [
-            sequelize.literal(
-              `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
-                currentUserId
-              )} AND Followships.followingId = User.id)`
-            ),
+          [ // 登入者是否追蹤
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Followships 
+                WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                  AND Followships.followingId = User.id
+              )
+            `),
             'isFollowed'
           ]
         ],
@@ -600,23 +613,29 @@ const userController = {
           'introduction',
           'role',
           'avatar',
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id AND Likes.object = "question") + ' + // 所發 question 得到的 like 數量
-                '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id AND Likes.object = "reply")' // 所發 reply 得到的 like 數量
-            ),
+          [ // 回覆得到的讚數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (*) 
+                FROM Replies 
+                JOIN Likes 
+                  ON Replies.id = Likes.objectId 
+                WHERE Replies.userId = User.id 
+                  AND Likes.object = "reply"
+            )`),
             'likedCount'
           ],
-          [
-            sequelize.literal(
-              `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
-                currentUserId
-              )} AND Followships.followingId = User.id)`
-            ),
+          [ // 登入者是否追蹤
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Followships 
+                WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                  AND Followships.followingId = User.id
+            )`),
             'isFollowed'
           ]
         ],
-        order: [['likedCount', 'DESC']],
+        // order: [['likedCount', 'DESC']],
         limit: Number(ACTIVE_USER_AMOUNT),
         where: { role: { [Op.ne]: 'admin' } }
       })
