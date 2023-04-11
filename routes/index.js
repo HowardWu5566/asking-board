@@ -15,16 +15,16 @@ const {
 } = require('../middleware/auth')
 const { signUpValidator, validate } = require('../middleware/validate')
 
-router.post('/api/v1/users', signUpValidator, validate, userController.signUp)
-router.post('/api/v1/users/login', userController.login)
-router.post('/api/v1/admin/login', adminController.login)
+router.post('/users', signUpValidator, validate, userController.signUp)
+router.post('/users/login', userController.login)
+router.post('/admin/login', adminController.login)
 
-router.use('/api/v1/auth', auth)
-router.use('/api/v1/users', authenticated, authenticatedUser, user)
-router.use('/api/v1/questions', authenticated, authenticatedUser, question)
-router.use('/api/v1/replies', authenticated, authenticatedUser, reply)
-router.use('/api/v1/followships', authenticated, authenticatedUser, followship)
-router.use('/api/v1/admin', authenticated, authenticatedAdmin, admin)
+router.use('/auth', auth)
+router.use('/users', authenticated, authenticatedUser, user)
+router.use('/questions', authenticated, authenticatedUser, question)
+router.use('/replies', authenticated, authenticatedUser, reply)
+router.use('/followships', authenticated, authenticatedUser, followship)
+router.use('/admin', authenticated, authenticatedAdmin, admin)
 
 router.use('*', undefinedRoute)
 
