@@ -6,6 +6,7 @@ const { imgurFileHandler } = require('../helpers/file-helper')
 const { relativeTime } = require('../helpers/date-helper')
 const { ACTIVE_USER_AMOUNT } = process.env
 const { anonymousHandler, getAccountHandler } = require('../helpers/user-data-helper')
+const { defaultAvatar } =require('../config/dropdown-value')
 
 const userController = {
   // 註冊帳號
@@ -687,7 +688,7 @@ const userController = {
 
       // 若刪除頭貼，還原預設頭貼
       if (avatar === '') {
-        updatedData.avatar = 'https://i.imgur.com/a5KIQyC.png'
+        updatedData.avatar = defaultAvatar
       }
 
       if (file) updatedData.avatar = await imgurFileHandler(file)

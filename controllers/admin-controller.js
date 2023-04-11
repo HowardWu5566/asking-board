@@ -4,6 +4,7 @@ const { User, Question, Reply, Like, sequelize } = require('../models')
 const { Op } = require('sequelize')
 const { relativeTime } = require('../helpers/date-helper')
 const { getAccountHandler } = require('../helpers/user-data-helper')
+const { defaultImage }=require('../config/dropdown-value')
 
 const adminController = {
   // 管理員登入
@@ -85,7 +86,7 @@ const adminController = {
 
         // 若無圖片，填入預設圖
         if (!question.image) {
-          question.image = 'https://i.imgur.com/7YBozYb.png'
+          question.image = defaultImage
         }
       })
 
