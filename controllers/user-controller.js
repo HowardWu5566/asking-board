@@ -162,10 +162,11 @@ const userController = {
     }
   },
 
-  // 查看使用者發問的問題
+  // 查看使用者的問題
   getUserQuestions: async (req, res, next) => {
     try {
-      const userId = req.params.id
+      const userId = Number(req.params.id)
+      const currentUserId = req.user.id
 
       // 確認使用者存在
       const user = await User.findByPk(userId)
@@ -189,12 +190,15 @@ const userController = {
             ),
             'likeCount'
           ],
-          [
-            sequelize.literal(
-              `EXISTS (SELECT id FROM Likes WHERE Likes.userId = ${sequelize.escape(
-                userId
-              )} AND Likes.object = "question" AND Likes.objectId = Question.id)`
-            ),
+          [ // 登入者是否收藏
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Likes 
+                WHERE Likes.userId = ${sequelize.escape(currentUserId)} 
+                  AND Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+              )
+            `),
             'isLiked'
           ]
         ],
@@ -222,9 +226,11 @@ const userController = {
     }
   },
 
+  // 查看使用者回覆的問題
   getUserReplies: async (req, res, next) => {
     try {
-      const userId = req.params.id
+      const userId = Number(req.params.id)
+      const currentUserId = req.user.id
 
       // 確認使用者存在
       const user = await User.findByPk(userId)
@@ -251,12 +257,15 @@ const userController = {
               ),
               'likeCount'
             ],
-            [
-              sequelize.literal(
-                `EXISTS (SELECT id FROM Likes WHERE Likes.userId = ${sequelize.escape(
-                  userId
-                )} AND Likes.object = "question" AND Likes.objectId = Question.id)`
-              ),
+            [ // 登入者是否收藏
+              sequelize.literal(`
+                EXISTS (
+                  SELECT id FROM Likes 
+                  WHERE Likes.userId = ${sequelize.escape(currentUserId)} 
+                    AND Likes.object = "question" 
+                    AND Likes.objectId = Question.id
+                )
+              `),
               'isLiked'
             ]
           ],
@@ -302,6 +311,7 @@ const userController = {
   getUserLikes: async (req, res, next) => {
     try {
       const userId = Number(req.params.id)
+      const currentUserId = req.user.id
 
       // 確認使用者存在
       const user = await User.findByPk(userId)
@@ -328,12 +338,15 @@ const userController = {
               ),
               'likeCount'
             ],
-            [
-              sequelize.literal(
-                `EXISTS (SELECT id FROM Likes WHERE Likes.userId = ${sequelize.escape(
-                  userId
-                )} AND Likes.object = "question" AND Likes.objectId = Question.id)`
-              ),
+            [ // 登入者是否收藏
+              sequelize.literal(`
+                EXISTS (
+                  SELECT id FROM Likes 
+                  WHERE Likes.userId = ${sequelize.escape(currentUserId)} 
+                    AND Likes.object = "question" 
+                    AND Likes.objectId = Question.id
+                )
+              `),
               'isLiked'
             ]
           ],
