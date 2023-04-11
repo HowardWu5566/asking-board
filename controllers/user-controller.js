@@ -86,6 +86,7 @@ const userController = {
   // 查看使用者
   getUser: async (req, res, next) => {
     try {
+      const currentUserId = req.user.id
       const userId = Number(req.params.id)
       const user = await User.findByPk(userId, {
         attributes: [
@@ -96,6 +97,15 @@ const userController = {
           'avatar',
           'introduction',
 
+          // 是否追蹤
+          [
+            sequelize.literal(
+              `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
+                currentUserId
+              )} AND Followships.followingId = User.id)`
+            ),
+            'isFollowed'
+          ],
           // 發問數
           [
             sequelize.literal(
