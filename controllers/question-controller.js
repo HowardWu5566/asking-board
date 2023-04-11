@@ -1,13 +1,11 @@
-const { User, Question, Reply, Like, Image, sequelize } = require('../models')
+const { User, Question, Reply, Like, sequelize } = require('../models')
 const { Op } = require('sequelize')
 const { imgurFileHandler } = require('../helpers/file-helper')
 const { relativeTime } = require('../helpers/date-helper')
-const {
-  anonymousHandler,
-  getAccountHandler
-} = require('../helpers/user-data-helper')
-
+const { anonymousHandler, getAccountHandler } = require('../helpers/user-data-helper')
+const { POPULAR_QUESTION_AMOUNT, POPULAR_QUESTION_DAY_RANGE } = process.env
 const questionController = {
+  // 查看所有問題
   getQuestions: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
@@ -38,25 +36,36 @@ const questionController = {
           'isAnonymous',
           'grade',
           'subject',
+          'image',
           'createdAt',
           [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Replies WHERE Replies.questionId = Question.id)'
-            ),
+            // 回覆數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Replies 
+                WHERE Replies.questionId = Question.id
+            )`),
             'replyCount'
           ],
           [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
-            ),
+            // 收藏數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Likes 
+                WHERE Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+            )`),
             'likeCount'
           ],
           [
-            sequelize.literal(
-              `EXISTS (SELECT id FROM Likes WHERE Likes.userId = ${sequelize.escape(
-                currentUserId
-              )} AND Likes.object = "question" AND Likes.objectId = Question.id)`
-            ),
+            // 登入者是否收藏
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Likes 
+                WHERE Likes.userId = ${sequelize.escape(currentUserId)} 
+                  AND Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+            )`),
             'isLiked'
           ]
         ],
@@ -64,10 +73,8 @@ const questionController = {
           {
             model: User,
             attributes: ['id', 'name', 'email', 'avatar', 'role']
-          },
-          { model: Image, attributes: ['id', 'url'] }
+          }
         ],
-        group: 'id', // 只取一張圖當預覽
         order: [['id', 'DESC']],
         where
       })
@@ -81,11 +88,6 @@ const questionController = {
         }
         // 時間格式
         question.createdAt = relativeTime(question.createdAt)
-
-        // 若無圖片，填入預設圖
-        if (!question.Images.id) {
-          question.Images = { url: '' }
-        }
       })
 
       return res.status(200).json(questions)
@@ -93,6 +95,8 @@ const questionController = {
       next(error)
     }
   },
+
+  // 查看特定問題
   getQuestion: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
@@ -106,25 +110,37 @@ const questionController = {
           'isAnonymous',
           'grade',
           'subject',
+          'image',
           'createdAt',
           [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Replies WHERE Replies.questionId = Question.id)'
-            ),
+            // 回覆數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Replies 
+                WHERE Replies.questionId = Question.id
+            )`),
             'replyCount'
           ],
           [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
-            ),
+            // 收藏數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Likes 
+                WHERE Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+            )`),
             'likeCount'
           ],
           [
-            sequelize.literal(
-              `EXISTS (SELECT id FROM Likes WHERE Likes.userId = ${sequelize.escape(
-                currentUserId
-              )} AND Likes.object = "question" AND Likes.objectId = Question.id)`
-            ),
+            // 登入者是否收藏
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Likes 
+                WHERE Likes.userId = ${sequelize.escape(currentUserId)} 
+                  AND Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+              )
+            `),
             'isLiked'
           ]
         ],
@@ -132,10 +148,6 @@ const questionController = {
           {
             model: User,
             attributes: ['id', 'name', 'email', 'avatar', 'role']
-          },
-          {
-            model: Image,
-            attributes: ['id', 'url']
           }
         ]
       })
@@ -160,97 +172,151 @@ const questionController = {
       next(error)
     }
   },
+
+  // 查看熱門問題
+  getPopularQuestions: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const { grade } = req.query
+      const startDate = new Date()
+      startDate.setDate(
+        // 熱門問題期間
+        startDate.getDate() - Number(POPULAR_QUESTION_DAY_RANGE)
+      )
+
+      // 篩選條件
+      const where = {
+        createdAt: {
+          [Op.gte]: startDate
+        }
+      }
+      if (grade) {
+        where.grade = { [Op.substring]: grade }
+      }
+
+      const questions = await Question.findAll({
+        raw: true,
+        nest: true,
+        attributes: [
+          'id',
+          'title',
+          'description',
+          'isAnonymous',
+          'grade',
+          'subject',
+          'image',
+          'createdAt',
+          [
+            // 回覆數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Replies 
+                WHERE Replies.questionId = Question.id
+            )`),
+            'replyCount'
+          ],
+          [
+            // 收藏數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Likes 
+                WHERE Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+            )`),
+            'likeCount'
+          ],
+          [
+            // 登入者是否收藏
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Likes 
+                WHERE Likes.userId = ${sequelize.escape(currentUserId)} 
+                  AND Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+              )
+            `),
+            'isLiked'
+          ]
+        ],
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'email', 'avatar', 'role']
+          }
+        ],
+        order: [
+          ['replyCount', 'DESC'],
+          ['id', 'DESC']
+        ],
+        limit: Number(POPULAR_QUESTION_AMOUNT),
+        where
+      })
+
+      questions.forEach(question => {
+        // 匿名處理
+        if (question.isAnonymous) {
+          anonymousHandler(question.User)
+        } else {
+          getAccountHandler(question.User)
+        }
+        // 時間格式
+        question.createdAt = relativeTime(question.createdAt)
+      })
+
+      return res.status(200).json(questions)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  // 發問
   postQuestion: async (req, res, next) => {
     try {
       const { title, description, isAnonymous, grade, subject } = req.body
-      const { files } = req
+      const { file } = req
       const userId = req.user.id
 
       // 寫入 Questions 資料表
-      const question = await Question.create({
+      await Question.create({
         userId,
         title,
         description: description.trim(),
         isAnonymous,
         grade,
-        subject
+        subject,
+        image: file ? await imgurFileHandler(file) : null
       })
-
-      // 若有圖片，寫入 Images 資料表
-      if (files.length) {
-        for (const file of files) {
-          await Image.create({
-            object: 'question',
-            objectId: question.dataValues.id,
-            url: await imgurFileHandler(file),
-            isSeed: false
-          })
-        }
-      }
 
       return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
     }
   },
+
+  // 修改問題
   putQuestion: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
-      const { title, description, isAnonymous, grade, subject, images } =
+      const { title, description, isAnonymous, grade, subject, image } =
         req.body
-      const { files } = req
+      const { file } = req
       const questionId = Number(req.params.id)
       const question = await Question.findByPk(questionId)
       if (!question)
         return res.status(404).json({ status: 'error', message: '問題不存在' })
       if (question.userId !== currentUserId)
+        // 檢查權限
         return res.status(401).json({ status: 'error', message: '無權限' })
 
-      await sequelize.transaction(async putQuestion => {
-        // 修改問題
-        await question.update(
-          {
-            title,
-            description,
-            isAnonymous,
-            grade,
-            subject
-          },
-          { transaction: putQuestion }
-        )
-        const existedImgs = await Image.findAll({
-          raw: true,
-          nest: true,
-          attributes: ['id'],
-          where: { object: 'question', objectId: questionId },
-          transaction: putQuestion
-        })
-        const deletedImgIds = existedImgs
-          .filter(item => !images?.includes(item.id.toString()))
-          .map(item => item.id)
-
-        // 修改後移除圖片
-        await Image.destroy({
-          where: {
-            id: { [Op.in]: deletedImgIds }
-          },
-          transaction: putQuestion
-        })
-
-        // 修改後新增圖片
-        if (files.length) {
-          for (const file of files) {
-            await Image.create(
-              {
-                object: 'question',
-                objectId: question.dataValues.id,
-                url: await imgurFileHandler(file),
-                isSeed: false
-              },
-              { transaction: putQuestion }
-            )
-          }
-        }
+      // 修改問題
+      await question.update({
+        title,
+        description,
+        isAnonymous,
+        grade,
+        subject,
+        image: file ? await imgurFileHandler(file) : image ? image : null
+          // 判斷換圖片、未變更或刪除圖片
       })
 
       return res.status(200).json({ status: 'success' })
@@ -258,6 +324,8 @@ const questionController = {
       next(error)
     }
   },
+
+  // 刪除問題
   deleteQuestion: async (req, res, next) => {
     try {
       const currentuserId = req.user.id
@@ -268,11 +336,11 @@ const questionController = {
       if (question.userId !== currentuserId)
         return res.status(401).json({ status: 'error', message: '無權限' })
 
-      // 刪除 question 時，同時刪除關聯的 replies, likes, images
+      // 刪除 question 時，同時刪除關聯的 replies, likes
       await sequelize.transaction(async deleteQuestion => {
         const replies = await Reply.findAll({ where: { questionId } })
         const replyIds = replies.map(reply => reply.id)
-        console.log(replyIds)
+        // 刪除 question 的 replies
         await Reply.destroy({
           where: { questionId },
           transaction: deleteQuestion
@@ -287,95 +355,7 @@ const questionController = {
           },
           transaction: deleteQuestion
         })
-        // 刪除 question 的 images，及 replies 的 images
-        await Image.destroy({
-          where: {
-            [Op.or]: [
-              { object: 'question', objectId: questionId },
-              { object: 'reply', objectId: { [Op.in]: replyIds } }
-            ]
-          },
-          transaction: deleteQuestion
-        })
         return await question.destroy({ transaction: deleteQuestion })
-      })
-      return res.status(200).json({ status: 'success' })
-    } catch (error) {
-      next(error)
-    }
-  },
-  getReplies: async (req, res, next) => {
-    try {
-      const currentUserId = req.user.id
-      const questionId = Number(req.params.id)
-      const question = await Question.findByPk(questionId)
-      if (!question)
-        return res.status(404).json({ status: 'error', message: '問題不存在' })
-      const replies = await Reply.findAll({
-        nest: true,
-        attributes: [
-          'id',
-          'comment',
-          'createdAt',
-          [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "reply" AND Likes.objectId = Reply.id)'
-            ),
-            'likeCount'
-          ],
-          [
-            sequelize.literal(
-              `EXISTS (SELECT id FROM Likes WHERE Likes.userId = ${sequelize.escape(
-                currentUserId
-              )} AND Likes.object = "reply" AND Likes.objectId = Reply.id)`
-            ),
-            'isLiked'
-          ]
-        ],
-        include: [
-          {
-            model: User,
-            attributes: ['id', 'name', 'email', 'avatar', 'role']
-          },
-          {
-            model: Image,
-            attributes: ['id', 'url']
-          }
-        ],
-        order: [
-          ['id', 'ASC'], // replies 排序
-          [Image, 'id', 'ASC'] // replies 內的 images 排序
-        ],
-        where: { questionId }
-      })
-
-      replies.forEach(reply => {
-        // 時間格式
-        reply.dataValues.createdAt = relativeTime(reply.dataValues.createdAt)
-        // 取得 account 欄位
-        getAccountHandler(reply.User.dataValues)
-      })
-
-      return res.status(200).json(replies)
-    } catch (error) {
-      next(error)
-    }
-  },
-  postReply: async (req, res, next) => {
-    try {
-      const userId = req.user.id
-      const { comment } = req.body
-      const { files } = req
-      const questionId = req.params.id
-      const question = await Question.findByPk(questionId)
-      if (!question)
-        return res.status(404).json({ status: 'error', message: '問題不存在' })
-
-      // 寫入 Replies 資料表
-      const reply = await Reply.create({
-        userId,
-        questionId,
-        comment
       })
 
       // 若有圖片，寫入 Images 資料表
@@ -395,6 +375,92 @@ const questionController = {
       next(error)
     }
   },
+
+  // 查看單一問題的回覆
+  getReplies: async (req, res, next) => {
+    try {
+      const currentUserId = req.user.id
+      const questionId = Number(req.params.id)
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
+      const replies = await Reply.findAll({
+        nest: true,
+        attributes: [
+          'id',
+          'comment',
+          'image',
+          'createdAt',
+          [ // 此回覆讚數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Likes 
+                WHERE Likes.object = "reply" 
+                  AND Likes.objectId = Reply.id
+            )`),
+            'likeCount'
+          ],
+          [ // 登入者是否點讚
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Likes 
+                WHERE Likes.userId = ${sequelize.escape(currentUserId)} 
+                  AND Likes.object = "reply" AND Likes.objectId = Reply.id
+            )`),
+            'isLiked'
+          ]
+        ],
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'email', 'avatar', 'role']
+          }
+        ],
+        order: [
+          ['id', 'DESC'] // replies 排序
+        ],
+        where: { questionId }
+      })
+
+      replies.forEach(reply => {
+        // 時間格式
+        reply.dataValues.createdAt = relativeTime(reply.dataValues.createdAt)
+        // 取得 account 欄位
+        getAccountHandler(reply.User.dataValues)
+      })
+
+      return res.status(200).json(replies)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  // 回覆問題
+  postReply: async (req, res, next) => {
+    try {
+      const userId = req.user.id
+      const { comment } = req.body
+      const { file } = req
+      const questionId = req.params.id
+      const question = await Question.findByPk(questionId)
+      if (!question)
+        return res.status(404).json({ status: 'error', message: '問題不存在' })
+
+      // 寫入 Replies 資料表
+      await Reply.create({
+        userId,
+        questionId,
+        comment,
+        image: file ? await imgurFileHandler(file) : null
+      })
+
+      return res.status(200).json({ status: 'success' })
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  // 收藏問題
   postQuestionLike: async (req, res, next) => {
     try {
       const userId = req.user.id
@@ -407,9 +473,6 @@ const questionController = {
           userId,
           object: 'question',
           objectId: questionId
-        },
-        defaults: {
-          isSeed: false
         }
       })
       if (!like[1])
@@ -421,6 +484,8 @@ const questionController = {
       next(error)
     }
   },
+
+  // 取消收藏問題
   deleteQuestionLike: async (req, res, next) => {
     try {
       const userId = req.user.id

@@ -1,11 +1,13 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { User, Question, Reply, Like, Image, sequelize } = require('../models')
+const { User, Question, Reply, Like, sequelize } = require('../models')
 const { Op } = require('sequelize')
 const { relativeTime } = require('../helpers/date-helper')
 const { getAccountHandler } = require('../helpers/user-data-helper')
+const { defaultImage }=require('../config/dropdown-value')
 
 const adminController = {
+  // 管理員登入
   login: async (req, res, next) => {
     try {
       const { email, password } = req.body
@@ -31,7 +33,9 @@ const adminController = {
       next(error)
     }
   },
-  getQuestions: async (req, res, next) => {
+
+  // 查看所有問題
+  getquestions: async (req, res, next) => {
     try {
       const questions = await Question.findAll({
         raw: true,
@@ -43,25 +47,34 @@ const adminController = {
           'isAnonymous',
           'grade',
           'subject',
+          'image',
           'createdAt',
           [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Replies WHERE Replies.questionId = Question.id)'
-            ),
+            // 回覆數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Replies 
+                WHERE Replies.questionId = Question.id
+            )`),
             'replyCount'
           ],
           [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
-            ),
+            // 收藏數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Likes 
+                WHERE Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+            )`),
             'likeCount'
           ]
         ],
         include: [
-          { model: User, attributes: ['id', 'name', 'email', 'avatar'] },
-          { model: Image, attributes: ['id', 'url'] }
+          {
+            model: User,
+            attributes: ['id', 'name', 'email', 'avatar', 'role']
+          }
         ],
-        group: 'id', // 只取一張圖當預覽
         order: [['id', 'DESC']]
       })
 
@@ -72,8 +85,8 @@ const adminController = {
         getAccountHandler(question.User)
 
         // 若無圖片，填入預設圖
-        if (!question.Images.id) {
-          question.Images = { url: 'https://i.imgur.com/7YBozYb.png' }
+        if (!question.image) {
+          question.image = defaultImage
         }
       })
 
@@ -82,6 +95,8 @@ const adminController = {
       next(error)
     }
   },
+
+  // 查看特定問題
   getquestion: async (req, res, next) => {
     try {
       const questionId = Number(req.params.id)
@@ -94,28 +109,32 @@ const adminController = {
           'isAnonymous',
           'grade',
           'subject',
+          'image',
           'createdAt',
           [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Replies WHERE Replies.questionId = Question.id)'
-            ),
+            // 回覆數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Replies 
+                WHERE Replies.questionId = Question.id
+            )`),
             'replyCount'
           ],
           [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "question" AND Likes.objectId = Question.id)'
-            ),
+            // 收藏數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Likes 
+                WHERE Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+            )`),
             'likeCount'
           ]
         ],
         include: [
           {
             model: User,
-            attributes: ['id', 'name', 'email', 'avatar']
-          },
-          {
-            model: Image,
-            attributes: ['id', 'url']
+            attributes: ['id', 'name', 'email', 'avatar', 'role']
           }
         ]
       })
@@ -135,6 +154,8 @@ const adminController = {
       next(error)
     }
   },
+
+  // 刪除特定問題
   deleteQuestion: async (req, res, next) => {
     try {
       const questionId = req.params.id
@@ -145,26 +166,17 @@ const adminController = {
           message: '問題不存在'
         })
 
-      // 刪除 question 時，同時刪除關聯的 replies, likes, images
+      // 刪除 question 時，同時刪除關聯的 replies, likes
       await sequelize.transaction(async deleteQuestion => {
         const replies = await Reply.findAll({ where: { questionId } })
         const replyIds = replies.map(reply => reply.id)
+        // 刪除 question 的 replies
         await Reply.destroy({
           where: { questionId },
           transaction: deleteQuestion
         })
         // 刪除 question 的 likes，及 replies 的 likes
         await Like.destroy({
-          where: {
-            [Op.or]: [
-              { object: 'question', objectId: questionId },
-              { object: 'reply', objectId: { [Op.in]: replyIds } }
-            ]
-          },
-          transaction: deleteQuestion
-        })
-        // 刪除 question 的 images，及 replies 的 images
-        await Image.destroy({
           where: {
             [Op.or]: [
               { object: 'question', objectId: questionId },
@@ -181,6 +193,8 @@ const adminController = {
       next(error)
     }
   },
+
+  // 查看某問題的回覆
   getReplies: async (req, res, next) => {
     try {
       const questionId = Number(req.params.id)
@@ -192,11 +206,16 @@ const adminController = {
         attributes: [
           'id',
           'comment',
+          'image',
           'createdAt',
           [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Likes WHERE Likes.object = "reply" AND Likes.objectId = Reply.id)'
-            ),
+            // 此回覆的讚數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Likes 
+                WHERE Likes.object = "reply" 
+                  AND Likes.objectId = Reply.id
+            )`),
             'likeCount'
           ]
         ],
@@ -204,15 +223,10 @@ const adminController = {
           {
             model: User,
             attributes: ['id', 'name', 'email', 'avatar']
-          },
-          {
-            model: Image,
-            attributes: ['id', 'url']
           }
         ],
         order: [
-          ['id', 'ASC'], // replies 排序
-          [Image, 'id', 'ASC'] // replies 內的 images 排序
+          ['id', 'DESC'] // replies 排序
         ],
         where: { questionId }
       })
@@ -229,6 +243,8 @@ const adminController = {
       next(error)
     }
   },
+
+  // 刪除特定回覆
   deleteReply: async (req, res, next) => {
     try {
       const replyId = Number(req.params.id)
@@ -239,15 +255,9 @@ const adminController = {
           message: '回覆不存在'
         })
 
-      // 刪除 reply 時，同時刪除關聯的 likes, images
+      // 刪除 reply 時，同時刪除關聯的 likes
       await sequelize.transaction(async deleteReply => {
-        // 刪除 reply 的 likes
         await Like.destroy({
-          where: { object: 'reply', objectId: replyId },
-          transaction: deleteReply
-        })
-        // 刪除 reply 的 images
-        await Image.destroy({
           where: { object: 'reply', objectId: replyId },
           transaction: deleteReply
         })
@@ -259,6 +269,8 @@ const adminController = {
       next(error)
     }
   },
+
+  // 查看所有使用者
   getUsers: async (req, res, next) => {
     try {
       const users = await User.findAll({
@@ -268,45 +280,61 @@ const adminController = {
           'email',
           'role',
           'avatar',
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions WHERE userId = User.id)'
-            ),
+          [ // 發問數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (*) FROM Questions 
+                WHERE userId = User.id
+            )`),
             'questionCount'
           ],
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Replies.userId = User.id)'
-            ),
+          [ // 回覆問題數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (*) 
+                FROM Questions 
+                JOIN Replies 
+                  ON Questions.id = Replies.questionId 
+                WHERE Replies.userId = User.id
+            )`),
             'replyCount'
           ],
-
-          // 問題收到讚數
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id)  '
-            ),
+          [ // 問題收到讚數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (*) 
+                FROM Questions 
+                JOIN Likes 
+                  ON Questions.id = Likes.objectId 
+                WHERE Questions.userId = User.id
+            )`),
             'questionLikedCount'
           ],
-
-          // 回覆收到讚數
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id)'
-            ),
+          [ // 回覆收到讚數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (*) 
+                FROM Replies 
+                JOIN Likes 
+                  ON Replies.id = Likes.objectId 
+                WHERE Replies.userId = User.id
+            )`),
             'replyLikedCount'
           ],
-
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Followships WHERE followingId = User.id)'
-            ),
+          [ // 多少人追蹤他
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Followships 
+                WHERE followingId = User.id
+            )`),
             'followerCount'
           ],
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Followships WHERE followerId = User.id)'
-            ),
+          [ // 他追蹤多少人
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Followships 
+                WHERE followerId = User.id
+            )`),
             'followingCount'
           ]
         ],

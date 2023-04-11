@@ -32,14 +32,14 @@ module.exports = (sequelize, DataTypes) => {
     if (!Array.isArray(findResult)) findResult = [findResult]
     for (const instance of findResult) {
       if (
-        instance.dataValues.object === 'question' &&
-        instance.Question !== undefined
+        instance?.dataValues.object === 'question' &&
+        instance?.Question !== undefined
       ) {
         delete instance.Reply
         delete instance.dataValues.Reply
       } else if (
-        instance.dataValues.object === 'reply' &&
-        instance.Reply !== undefined
+        instance?.dataValues.object === 'reply' &&
+        instance?.Reply !== undefined
       ) {
         delete instance.Question
         delete instance.dataValues.Question

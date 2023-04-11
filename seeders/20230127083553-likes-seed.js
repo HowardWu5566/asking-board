@@ -1,9 +1,6 @@
 'use strict'
 const { User, Question, Reply } = require('../models')
-const {
-  LIKE_QUESTION_AMOUNT,
-  LIKE_REPLY_AMOUNT
-} = require('../helpers/seeders-amount')
+const { LIKE_QUESTION_AMOUNT, LIKE_REPLY_AMOUNT } = process.env
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -47,7 +44,7 @@ module.exports = {
           questionIdArr[Math.floor(Math.random() * questionIdArr.length)].id
       } while (likes.join('-').includes(`${userId},question,${questionId}`))
       likes.push([userId, 'question', questionId])
-    } while (likes.length < LIKE_QUESTION_AMOUNT)
+    } while (likes.length < Number(LIKE_QUESTION_AMOUNT))
 
     do {
       let userId
@@ -57,12 +54,16 @@ module.exports = {
         replyId = replyIdArr[Math.floor(Math.random() * replyIdArr.length)].id
       } while (likes.join('-').includes(`${userId},reply,${replyId}`))
       likes.push([userId, 'reply', replyId])
-    } while (likes.length < LIKE_QUESTION_AMOUNT + LIKE_REPLY_AMOUNT)
-
+    } while (
+      likes.length <
+      Number(LIKE_QUESTION_AMOUNT) + Number(LIKE_REPLY_AMOUNT)
+    )
     await queryInterface.bulkInsert(
       'Likes',
       Array.from(
-        { length: LIKE_QUESTION_AMOUNT + LIKE_REPLY_AMOUNT },
+        {
+          length: Number(LIKE_QUESTION_AMOUNT) + Number(LIKE_REPLY_AMOUNT)
+        },
         (_, index) => ({
           userId: likes[index][0],
           object: likes[index][1],

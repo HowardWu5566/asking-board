@@ -1,8 +1,10 @@
+const { defaultAvatar } = require('../config/dropdown-value')
+
 module.exports = {
   anonymousHandler: user => {
     user.name = '匿名'
     user.account = 'anonymous'
-    user.avatar = 'https://imgur.com/NCBjuk5'
+    user.avatar = defaultAvatar
     delete user.email
     return user
   },

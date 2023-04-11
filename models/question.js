@@ -25,7 +25,8 @@ module.exports = (sequelize, DataTypes) => {
       description: DataTypes.STRING,
       isAnonymous: DataTypes.BOOLEAN,
       grade: DataTypes.STRING,
-      subject: DataTypes.STRING
+      subject: DataTypes.STRING,
+      image: DataTypes.STRING
     },
     {
       sequelize,

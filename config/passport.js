@@ -28,11 +28,11 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: 'http://localhost:3000/api/v1/auth/google/callback'
+      callbackURL: process.env.CALLBACK_URL
     },
     async function (accessToken, refreshToken, profile, done) {
       let user = await User.findOne({
-        attributes: ['id', 'name', 'email', 'role', 'avatar'],
+        attributes: ['id', 'name', 'email', 'role', 'avatar', 'isLocalAccount'],
         where: { email: profile.emails[0].value, isLocalAccount: false }
       })
       if (!user)
@@ -41,10 +41,15 @@ passport.use(
           email: profile.emails[0].value,
           password: bcrypt.hashSync(Math.random().toString(36).slice(-8), 10),
           role: '學生',
-          avatar: profile.photos[0].value
+          avatar: profile.photos[0].value,
+          isLocalAccount: false
         })
       const userData = user.toJSON()
-      const token = jwt.sign(userData, process.env.JWT_SECRET, {
+      delete userData.password // 刪除機敏資料
+      delete userData.createdAt
+      delete userData.updatedAt
+
+      const token = jwt.sign(userData, process.env.JWT_SECRET, { // 簽發 JWT
         expiresIn: '30d'
       })
       return done(null, [userData, token])

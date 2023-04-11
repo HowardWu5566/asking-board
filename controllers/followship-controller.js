@@ -1,10 +1,11 @@
-const { Followship, User, sequelize } = require('../models')
+const { Followship, User } = require('../models')
 
 const followshipController = {
+  // 追蹤他人
   followOthers: async (req, res, next) => {
     try {
       const userId = req.user.id
-      const followingId = Number(req.body.id)
+      const followingId = Number(req.params.id)
       if (userId === followingId)
         return res
           .status(422)
@@ -25,11 +26,13 @@ const followshipController = {
         return res
           .status(422)
           .json({ status: 'error', message: '已追蹤此使用者' })
-      res.status(200).json({ status: 'success' })
+      return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
     }
   },
+
+  // 取消追蹤他人
   unfollowOthers: async (req, res, next) => {
     try {
       const userId = req.user.id
@@ -52,7 +55,7 @@ const followshipController = {
           .status(422)
           .json({ status: 'error', message: '尚未追蹤此使用者' })
       await followship.destroy()
-      res.status(200).json({ status: 'success' })
+      return res.status(200).json({ status: 'success' })
     } catch (error) {
       next(error)
     }

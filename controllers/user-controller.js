@@ -1,24 +1,15 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const {
-  User,
-  Question,
-  Reply,
-  Like,
-  Followship,
-  sequelize
-} = require('../models')
+const { User, Question, Reply, Like, Followship, sequelize } = require('../models')
 const { Op } = require('sequelize')
 const { imgurFileHandler } = require('../helpers/file-helper')
 const { relativeTime } = require('../helpers/date-helper')
-const ACTIVE_USER_COUNT = 10
-const {
-  anonymousHandler,
-  getAccountHandler
-} = require('../helpers/user-data-helper')
+const { ACTIVE_USER_AMOUNT } = process.env
+const { anonymousHandler, getAccountHandler } = require('../helpers/user-data-helper')
+const { defaultAvatar } =require('../config/dropdown-value')
 
 const userController = {
-  // 註冊
+  // 註冊帳號
   signUp: async (req, res, next) => {
     try {
       const { name, email, password, role } = req.body
@@ -26,7 +17,7 @@ const userController = {
       if (userEmail)
         return res.status(422).json({
           status: 'error',
-          message: 'email 已註冊',
+          message: { email: 'email 已註冊' },
           name,
           email,
           role
@@ -45,13 +36,15 @@ const userController = {
       delete newUser.dataValues.password
       delete newUser.dataValues.createdAt
       delete newUser.dataValues.updatedAt
-      return res.json({ status: 'success', user: newUser.dataValues })
+      return res
+        .status(200)
+        .json({ status: 'success', user: newUser.dataValues })
     } catch (error) {
       next(error)
     }
   },
 
-  // 登入
+  // 使用者登入
   login: async (req, res, next) => {
     try {
       // 檢查信箱及密碼
@@ -80,9 +73,10 @@ const userController = {
     }
   },
 
-  // 查看使用者
+  // 查看特定使用者
   getUser: async (req, res, next) => {
     try {
+      const currentUserId = req.user.id
       const userId = Number(req.params.id)
       const user = await User.findByPk(userId, {
         attributes: [
@@ -92,58 +86,67 @@ const userController = {
           'role',
           'avatar',
           'introduction',
-
-          // 發問數
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions WHERE userId = User.id)'
-            ),
+          [ // 登入者是否追蹤
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Followships 
+                WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                  AND Followships.followingId = User.id
+              )
+            `),
+            'isFollowed'
+          ],
+          [ // 發問數
+            sequelize.literal(`(
+              SELECT COUNT (id) FROM Questions 
+              WHERE userId = User.id 
+                AND isAnonymous = false
+            )`),
             'questionCount'
           ],
-
-          // 回覆數
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Replies ON Questions.id = Replies.questionId WHERE Replies.userId = User.id)'
-            ),
+          [ // 回覆問題數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (DISTINCT Replies.questionId) 
+                FROM Questions 
+                JOIN Replies 
+                  ON Questions.id = Replies.questionId 
+                WHERE Replies.userId = User.id
+            )`),
             'replyCount'
           ],
-
-          // 問題收到讚數
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id)  '
-            ),
-            'questionLikedCount'
+          [ // 收藏問題數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Likes 
+                WHERE Likes.object = "question" 
+                  AND Likes.userId = User.id
+            )`),
+            'likeQuestionCount'
           ],
-
-          // 回覆收到讚數
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id)'
-            ),
-            'replyLikedCount'
-          ],
-
-          // 多少人追蹤他
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Followships WHERE followingId = User.id)'
-            ),
+          [ // 多少人追蹤他
+           sequelize.literal(`(
+              SELECT 
+                COUNT(id) FROM Followships 
+                WHERE followingId = User.id
+            )`),
             'followerCount'
           ],
-
-          // 他追蹤多少人
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Followships WHERE followerId = User.id)'
-            ),
+          [ // 他追蹤多少人
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Followships 
+                WHERE followerId = User.id
+            )`),
             'followingCount'
           ]
         ]
       })
+
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       // 取得 account 欄位
       getAccountHandler(user.dataValues)
@@ -154,15 +157,18 @@ const userController = {
     }
   },
 
-  // 查看使用者發問的問題
+  // 查看使用者的問題
   getUserQuestions: async (req, res, next) => {
     try {
-      const userId = req.params.id
+      const userId = Number(req.params.id)
+      const currentUserId = req.user.id
 
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       const questions = await Question.findAll({
         attributes: [
@@ -172,19 +178,45 @@ const userController = {
           'description',
           'grade',
           'subject',
-          'createdAt'
+          'createdAt',
+          [ // 收藏數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Likes 
+                WHERE Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+            )`),
+            'likeCount'
+          ],
+          [ // 登入者是否收藏
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Likes 
+                WHERE Likes.userId = ${sequelize.escape(currentUserId)} 
+                  AND Likes.object = "question" 
+                  AND Likes.objectId = Question.id
+              )
+            `),
+            'isLiked'
+          ]
         ],
+        include: {
+          model: User,
+          attributes: ['id', 'name', 'email', 'role', 'avatar']
+        },
         order: [['id', 'DESC']],
         where: { userId, isAnonymous: false } // 不顯示匿名發問
       })
 
-      // 調整時間格式
-      questions.forEach(
-        question =>
-          (question.dataValues.createdAt = relativeTime(
-            question.dataValues.createdAt
-          ))
-      )
+      questions.forEach(question => {
+        //取得 account 欄位
+        getAccountHandler(question.User.dataValues)
+
+        // 調整時間格式
+        question.dataValues.createdAt = relativeTime(
+          question.dataValues.createdAt
+        )
+      })
 
       return res.status(200).json(questions)
     } catch (error) {
@@ -192,14 +224,18 @@ const userController = {
     }
   },
 
+  // 查看使用者回覆的問題
   getUserReplies: async (req, res, next) => {
     try {
-      const userId = req.params.id
+      const userId = Number(req.params.id)
+      const currentUserId = req.user.id
 
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       const replies = await Reply.findAll({
         attributes: ['id', 'questionId', 'comment', 'createdAt'],
@@ -212,7 +248,27 @@ const userController = {
             'isAnonymous',
             'grade',
             'subject',
-            'createdAt'
+            'createdAt',
+            [ // 收藏數
+              sequelize.literal(`(
+                SELECT 
+                  COUNT (id) FROM Likes 
+                  WHERE Likes.object = "question" 
+                    AND Likes.objectId = Question.id
+              )`),
+              'likeCount'
+            ],
+            [ // 登入者是否收藏
+              sequelize.literal(`
+                EXISTS (
+                  SELECT id FROM Likes 
+                  WHERE Likes.userId = ${sequelize.escape(currentUserId)} 
+                    AND Likes.object = "question" 
+                    AND Likes.objectId = Question.id
+                )
+              `),
+              'isLiked'
+            ]
           ],
           include: {
             model: User,
@@ -234,9 +290,7 @@ const userController = {
 
         // 時間格式
         reply.dataValues.createdAt = relativeTime(reply.createdAt)
-        reply.Question.dataValues.createdAt = relativeTime(
-          reply.Question.createdAt
-        )
+        reply.Question.dataValues.createdAt = relativeTime(reply.Question.createdAt)
 
         // 問題過長
         reply.Question.description =
@@ -256,11 +310,14 @@ const userController = {
   getUserLikes: async (req, res, next) => {
     try {
       const userId = Number(req.params.id)
+      const currentUserId = req.user.id
 
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       const likes = await Like.findAll({
         attributes: ['id', 'object', 'objectId'],
@@ -273,7 +330,27 @@ const userController = {
             'isAnonymous',
             'grade',
             'subject',
-            'createdAt'
+            'createdAt',
+            [ // 收藏數
+              sequelize.literal(`(
+                SELECT 
+                  COUNT (id) FROM Likes 
+                  WHERE Likes.object = "question" 
+                    AND Likes.objectId = Question.id
+              )`),
+              'likeCount'
+            ],
+            [ // 登入者是否收藏
+              sequelize.literal(`
+                EXISTS (
+                  SELECT id FROM Likes 
+                  WHERE Likes.userId = ${sequelize.escape(currentUserId)} 
+                    AND Likes.object = "question" 
+                    AND Likes.objectId = Question.id
+                )
+              `),
+              'isLiked'
+            ]
           ],
           include: {
             model: User,
@@ -311,25 +388,51 @@ const userController = {
   // 查看誰追蹤他
   getUserFollowers: async (req, res, next) => {
     try {
+      const currentUserId = req.user.id
       const userId = Number(req.params.id)
 
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       const followers = await Followship.findAll({
         attributes: [],
         include: {
           model: User,
           as: 'followers',
-          attributes: ['id', 'name', 'email', 'role', 'avatar']
+          attributes: [
+            'id',
+            'name',
+            'email',
+            'role',
+            'avatar',
+            'introduction',
+            [ // 登入者是否追蹤
+              sequelize.literal(`
+                EXISTS (
+                  SELECT id FROM Followships 
+                  WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                    AND Followships.followingId = followers.id
+                )
+              `),
+              'isFollowed'
+            ]
+          ]
         },
         where: { followingId: userId }
       })
 
       // 改變回傳資料結構，方便前端串接
       const followerData = followers.map(follower => {
+        // 如果自己在名單上，刪除自己的 isFollowed 屬性
+        if (follower.followers.dataValues.id === currentUserId) {
+          delete follower.followers.dataValues.isFollowed
+        }
+
+        // 取得account 欄位
         getAccountHandler(follower.followers.dataValues)
         return follower.followers.dataValues
       })
@@ -343,19 +446,39 @@ const userController = {
   // 查看他追蹤誰
   getUserFollowings: async (req, res, next) => {
     try {
+      const currentUserId = req.user.id
       const userId = Number(req.params.id)
 
       // 確認使用者存在
       const user = await User.findByPk(userId)
       if (!user || user.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       const followings = await Followship.findAll({
         attributes: [],
         include: {
           model: User,
           as: 'followings',
-          attributes: ['id', 'name', 'email', 'role', 'avatar']
+          attributes: [
+            'id',
+            'name',
+            'email',
+            'role',
+            'avatar',
+            'introduction',
+            [ // 登入者是否追蹤
+              sequelize.literal(`
+                EXISTS (
+                  SELECT id FROM Followships 
+                  WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                    AND Followships.followingId = followings.id
+                )
+              `),
+              'isFollowed'
+            ]
+          ]
         },
         order: [['id', 'DESC']],
         where: { followerId: userId }
@@ -363,6 +486,12 @@ const userController = {
 
       // 改變回傳資料結構，方便前端串接
       const followingData = followings.map(following => {
+        // 如果自己在名單上，刪除自己的 isFollowed 屬性
+        if (following.followings.dataValues.id === currentUserId) {
+          delete following.followings.dataValues.isFollowed
+        }
+
+        // 取得 account 欄位
         getAccountHandler(following.followings.dataValues)
         return following.followings.dataValues
       })
@@ -382,25 +511,30 @@ const userController = {
           'id',
           'name',
           'email',
+          'introduction',
           'role',
           'avatar',
-          [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Replies WHERE Replies.userId = User.id)'
-            ),
+          [ // 回覆數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Replies 
+                WHERE Replies.userId = User.id
+            )`),
             'replyCount'
           ],
-          [
-            sequelize.literal(
-              `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
-                currentUserId
-              )} AND Followships.followingId = User.id)`
-            ),
+          [ // 登入者是否追蹤
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Followships 
+                WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                  AND Followships.followingId = User.id
+              )
+            `),
             'isFollowed'
           ]
         ],
         order: [['replyCount', 'DESC']],
-        limit: ACTIVE_USER_COUNT,
+        limit: Number(ACTIVE_USER_AMOUNT),
         where: { role: { [Op.ne]: 'admin' } }
       })
 
@@ -427,25 +561,30 @@ const userController = {
           'id',
           'name',
           'email',
+          'introduction',
           'role',
           'avatar',
-          [
-            sequelize.literal(
-              '(SELECT COUNT(id) FROM Followships WHERE followingId = User.id)'
-            ),
+          [ // 追蹤數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (id) FROM Followships 
+                WHERE followingId = User.id
+            )`),
             'followerCount'
           ],
-          [
-            sequelize.literal(
-              `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
-                currentUserId
-              )} AND Followships.followingId = User.id)`
-            ),
+          [ // 登入者是否追蹤
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Followships 
+                WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                  AND Followships.followingId = User.id
+              )
+            `),
             'isFollowed'
           ]
         ],
         order: [['followerCount', 'DESC']],
-        limit: ACTIVE_USER_COUNT,
+        limit: Number(ACTIVE_USER_AMOUNT),
         where: { role: { [Op.ne]: 'admin' } }
       })
 
@@ -472,26 +611,33 @@ const userController = {
           'id',
           'name',
           'email',
+          'introduction',
           'role',
           'avatar',
-          [
-            sequelize.literal(
-              '(SELECT COUNT(*) FROM Questions JOIN Likes ON Questions.id = Likes.objectId WHERE Questions.userId = User.id AND Likes.object = "question") + ' + // 所發 question 得到的 like 數量
-                '(SELECT COUNT(*) FROM Replies JOIN Likes ON Replies.id = Likes.objectId WHERE Replies.userId = User.id AND Likes.object = "reply")' // 所發 reply 得到的 like 數量
-            ),
+          [ // 回覆得到的讚數
+            sequelize.literal(`(
+              SELECT 
+                COUNT (*) 
+                FROM Replies 
+                JOIN Likes 
+                  ON Replies.id = Likes.objectId 
+                WHERE Replies.userId = User.id 
+                  AND Likes.object = "reply"
+            )`),
             'likedCount'
           ],
-          [
-            sequelize.literal(
-              `EXISTS(SELECT id FROM Followships WHERE Followships.followerId = ${sequelize.escape(
-                currentUserId
-              )} AND Followships.followingId = User.id)`
-            ),
+          [ // 登入者是否追蹤
+            sequelize.literal(`
+              EXISTS (
+                SELECT id FROM Followships 
+                WHERE Followships.followerId = ${sequelize.escape(currentUserId)} 
+                  AND Followships.followingId = User.id
+            )`),
             'isFollowed'
           ]
         ],
-        order: [['likedCount', 'DESC']],
-        limit: ACTIVE_USER_COUNT,
+        // order: [['likedCount', 'DESC']],
+        limit: Number(ACTIVE_USER_AMOUNT),
         where: { role: { [Op.ne]: 'admin' } }
       })
 
@@ -517,7 +663,9 @@ const userController = {
         attributes: ['id', 'name', 'email', 'introduction', 'avatar']
       })
       if (!currentUser || currentUser.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
 
       // 取得 account 欄位
       getAccountHandler(currentUser.dataValues)
@@ -540,7 +688,7 @@ const userController = {
 
       // 若刪除頭貼，還原預設頭貼
       if (avatar === '') {
-        updatedData.avatar = 'https://imgur.com/NCBjuk5'
+        updatedData.avatar = defaultAvatar
       }
 
       if (file) updatedData.avatar = await imgurFileHandler(file)
@@ -560,7 +708,9 @@ const userController = {
         attributes: ['id', 'role', 'email', 'isLocalAccount']
       })
       if (!currentUser || currentUser.role === 'admin')
-        return res.status(404).json({ status: 404, message: '使用者不存在' })
+        return res
+          .status(404)
+          .json({ status: 'error', message: '使用者不存在' })
       return res.status(200).json({ status: 'success', currentUser })
     } catch (error) {
       next(error)
@@ -575,16 +725,18 @@ const userController = {
 
       const currentUser = await User.findByPk(currentUserId)
       const updatedData = {}
-
       // 本站帳號才能修改信箱與密碼
       if (currentUser.isLocalAccount) {
-        const user = await User.findOne({ where: { email } })
-        if (user) {
-          return res
-            .status(422)
-            .json({ status: 'error', message: 'email 已重複註冊' })
-        } else if (email !== currentUser.email) {
-          updatedData.email = email
+        if (email !== currentUser.email) {
+          // 信箱不能與其他使用者重複
+          const user = await User.findOne({ where: { email } })
+          if (user) {
+            return res
+              .status(422)
+              .json({ status: 'error', message: { email: 'email 已重複註冊' } })
+          } else {
+            updatedData.email = email
+          }
         }
 
         // 舊密碼驗證
@@ -596,7 +748,7 @@ const userController = {
           if (!isPasswordCorrect) {
             return res
               .status(401)
-              .json({ status: 'error', message: '密碼錯誤' })
+              .json({ status: 'error', message: { password: '密碼錯誤' } })
           } else {
             updatedData.password = await bcrypt.hashSync(newPassword, 10)
           }
